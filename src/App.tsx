@@ -6,7 +6,7 @@ interface ShiftItem {
   id: number;
   content: string;
   start: string;
-  end: string;
+  end: string;  
 }
 
 const App: React.FC = () => {
