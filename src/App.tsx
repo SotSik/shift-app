@@ -1,36 +1,41 @@
-import React, { useEffect, useRef } from 'react';
+import React, { memo, useEffect , useState } from 'react';
 import { Timeline } from 'vis-timeline/standalone';
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
-//CSS
-interface ShiftItem {
-  id: number;
-  content: string;
-  start: string;
-  end: string;  
+import './App.css';
+
+const list = ["homo","gaki"];
+
+
+
+function PopUp({onClick}){
+  return (<div className={"PopUp"}>
+          <p>ここにポップアップの内容を記述します。</p>
+          <button onClick={onClick}>閉じる</button>
+        </div>);
 }
 
-const App: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const items: ShiftItem[] = [
-      { id: 1, content: 'A', start: '2026-04-21 09:00', end: '2026-04-21 18:00' },
-      { id: 2, content: 'B', start: '2026-04-21 21:00', end: '2026-04-22 06:00' }
-    ];
-    const options = {
-      stack: false,
-      editable: true,
-    };
-    const timeline = new Timeline(containerRef.current, items, options);
-    return () => timeline.destroy();
-  }, []);
-  return (
-    <body>
-    <div style={{ padding: '20px' }}>
-      <h1>シフト管理システム</h1>
-      <div ref={containerRef} />
-    </div>
-    </body>
+function Person({e} : {e:string} , {onClick} : {onClick : void}){
+  return (<button
+  onClick = {onClick}
+  >HOMOGAKI</button>);
+}
+
+function PersonList(){
+  let elm;
+  elm = list.map( v => 
+    <div> <Person e="{v}" /> </div>
   );
-};
-export default App;
+  return elm;
+}
+
+function ShiftField(){
+  return (<div><PersonList /></div>); 
+}
+
+export default function App(){
+  const [isPopUp, setPopUp] = useState(false);
+  const [user , setUser] = useState("");
+  const togglePopUp = () => { setPopUp(!isPopUp); };
+  return (<div><ShiftField /> {isPopUp && <PopUp/>}</div>
+  );
+}
