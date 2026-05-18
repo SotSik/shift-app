@@ -1,14 +1,12 @@
 import React, { memo, useEffect , useState ,useRef } from 'react';
 import vis, { type SubGroupStackOptions } from 'vis';
-<<<<<<< HEAD
-import  Timeline  from  'react-calendar-timeline' 
-import  moment  from  'moment'
 import Box from '@mui/material/Box';
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import Popper from '@mui/material/Popper';
+import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
 import Fade from '@mui/material/Fade';
@@ -23,7 +21,7 @@ const timelineOptions = {
   showCurrentTime: true, 
   zoomMin: 10000, 
   type: "range", 
-  maxHeight: '120px', 
+  maxHeight: '500px', 
   minHeight: '50px',
   format: {
     minorLabels: {
@@ -33,11 +31,11 @@ const timelineOptions = {
   }
 }
 
-const groups = [{ id: 1, content: 'HOMOrange type group', }]
-const list = ["は","ひ"];
+const groups = [{ id: 1, content: 'HOMOrange type group', },{ id: 2, content: 'Very Homo', }]
+const list = ["ナナフシ","つまようじ","薄型テレビ"];
 
 interface ShiftItem {
-  className?: string;
+  id: number | string;
   start: Date;
   end: Date;
   content: string;
@@ -50,64 +48,40 @@ interface TimelineProps extends vis.DataSet<ShiftItem>{
 
 let Shiftitems = new vis.DataSet<ShiftItem>();
 Shiftitems.add([
-    {className: 'range-type-class', start: new Date(2018, 2, 20, 10, 10, 0), end: new Date(2018, 2, 20, 11, 9, 0), content: 'range type item', type: 'range', group: 1,},
-    {className: 'range-type-class2', start: new Date(2018, 2, 20, 11, 45, 0), end: new Date(2018, 2, 20, 14, 19, 0), content: "range type item2", type: 'range', group: 1,}
+    {id: 'range-type-class', start: new Date(2018, 2, 20, 10, 10, 0), end: new Date(2018, 2, 20, 11, 9, 0), content: 'range type item', type: 'range', group: 1,},
+    {id: 'range-type-class2', start: new Date(2018, 2, 20, 11, 45, 0), end: new Date(2018, 2, 20, 14, 19, 0), content: "range type item2", type: 'range', group: 1,},
+    {id: 'range-type-class3', start: new Date(2018, 2, 20, 11, 0, 0), end: new Date(2018, 2, 20, 16, 0 , 0), content: "range type item3", type: 'range', group: 2,}
 ]);
-
+let ShiftMembers = {
+  "range-type-class" : ["ナナフシ","つまようじ","薄型テレビ"],
+  "range-type-class2" : ["ナナフシ","つまようじ"],
+  "range-type-class3" : ["ナナフシ","つまようじ"]
+}
 export default function App(){
-  return (<div><Barr/><p>個人シフト</p>    <Timeliner
+  const [user, setUser] = useState("");
+  return (<div><Barr/><p>個人シフト  </p> <TextField id="outlined-basic" label="Outlined" variant="outlined"  onChange={(e) => {
+        setUser(e.target.value);
+      }} />   <Timeliner
       options={timelineOptions}
-      items={Shiftitems}
+      items={searchUsersShift({user})}
       groups={[{ id: 1, content: 'あなたのシフト' }]}
     /><p>全体シフト</p><ShiftField /><TestPop /> </div>
   );
 }
 
-=======
-import  Timeline  from 'react-calendar-timeline' 
-import 'react-calendar-timeline/style.css'
-import  moment  from  'moment'
-import Box from '@mui/material/Box';
-import Popper from '@mui/material/Popper';
-import Button from '@mui/material/Button';
-import Fade from '@mui/material/Fade';
-import './App.css';
-import { Dataset } from '@mui/icons-material';
-import { createRoot } from 'react-dom/client'
-
-const groups = [{ id: 1, title: 'group 1' }, { id: 2, title: 'group 2' }]
-const list = ["homo","gaki"];
-
-const items = [
-  {
-    id: 1,
-    group: 1,
-    title: 'item 1',
-    start_time: moment(),
-    end_time: moment().add(1, 'hour')
-  },
-  {
-    id: 2,
-    group: 2,
-    title: 'item 2',
-    start_time: moment().add(-0.5, 'hour'),
-    end_time: moment().add(0.5, 'hour')
-  },
-  {
-    id: 3,
-    group: 1,
-    title: 'item 3',
-    start_time: moment().add(2, 'hour'),
-    end_time: moment().add(3, 'hour')
-  }
-]
-
-export default function App(){
-  return (<div><p>個人シフト</p><p>全体シフト</p><ShiftField /><TestPop /> </div>
-  );
+function searchUsersShift({user} : {user:string}){
+  let ans = new vis.DataSet<ShiftItem>();
+  Shiftitems.forEach((s) => {
+        if(s.id){
+          //@ts-ignore
+        if(ShiftMembers[s.id].includes(user)) {
+          let r = s;
+          r.group = 1;
+          ans.add(r);
+  } }});
+  return ans;
 }
 
->>>>>>> a50a3659f46d6c190ae0661da389fcf9f05bf0d5
 function TestPop(){
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -134,17 +108,12 @@ function ShiftPop(){
   const id = open ? 'simple-popper' : undefined;
   return(<div>
 <Popper id={id} open={open} anchorEl={anchorEl}>
-<<<<<<< HEAD
   <Box sx={{ border: 1, p: 1 ,bgcolor: 'background.paper'}} >
-=======
-  <Box sx={{ border: 1, p: 1 }}>
->>>>>>> a50a3659f46d6c190ae0661da389fcf9f05bf0d5
     <PersonList/>
   </Box>
 </Popper></div>);
 }
 
-<<<<<<< HEAD
 function PersonProp({p}:{p:string}){
   return (<div>
     <p>{p}</p>
@@ -183,11 +152,6 @@ function Person({e} : {e:string} ){
   return (<div><Button variant="outlined" onClick = {handleClick}
   >{e}</Button><Popper id={id} open={open} anchorEl={anchorEl} >
     <Box sx = {{ border: 1, p: 1, bgcolor : "background.paper"}}><PersonProp p = {e}/></Box></Popper></div>);
-=======
-function Person({e} : {e:string} ){
-  return (<Button variant="outlined"
-  >{e}</Button>);
->>>>>>> a50a3659f46d6c190ae0661da389fcf9f05bf0d5
 }
 
 function PersonList(){
@@ -200,26 +164,12 @@ function PersonList(){
 
 function ShiftField(){
   return (<div>
-<<<<<<< HEAD
     <Timeliner
       options={timelineOptions} items={Shiftitems} groups={groups} 
-=======
-    <Timeline
-      groups={groups}
-      items={items}
-      defaultTimeStart= {moment().add(-12, 'hour').valueOf()}
-      defaultTimeEnd= {moment().add(12, "hour").valueOf()}
-      dragSnap = {1000*60*240}
-      minZoom = {15*60*1000}
-      maxZoom = {10 * 86400 * 100}
-      canMove = {false}
-      onItemSelect
->>>>>>> a50a3659f46d6c190ae0661da389fcf9f05bf0d5
     /><ShiftPop />
   </div>); 
 }
 
-<<<<<<< HEAD
 function Timeliner({options,items,groups} : {options:object,items:TimelineProps ,groups:object[]} ){
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -230,11 +180,14 @@ function Timeliner({options,items,groups} : {options:object,items:TimelineProps 
   let id = "";   
   useEffect(() => {
     if (!container.current) return;
+    console.log(items);
+    console.log(groups);
     let timeline = new vis.Timeline(container.current, items, groups, options);
     timeline.on('select', (event) => {
       if (event.items) {
         id = event.items[0]
-        const targetElement = event.event.srcEvent.target.closest('.vis-item');        if(targetElement){
+        const targetElement = event.event.srcEvent.target.closest('.vis-item');
+        if(targetElement){
           setTimeout(() => {
             setAnchorEl(targetElement);
           }, 0);
@@ -257,8 +210,4 @@ function Timeliner({options,items,groups} : {options:object,items:TimelineProps 
     <PersonList/>
   </Box>
 </Popper></div>;
-=======
-function selected(){
-  
->>>>>>> a50a3659f46d6c190ae0661da389fcf9f05bf0d5
 }
