@@ -10,8 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@fontsource/roboto": "^5.2.10",
+    "@mui/icons-material": "^9.0.1",
+    "@mui/material": "^9.0.1",
     "@types/vis": "^4.21.27",
     "react": "^19.2.5",
+    "react-calendar-timeline": "^0.30.0-beta.18",
     "react-dom": "^19.2.5",
     "vis": "^4.21.0",
     "vis-data": "^8.0.3",
