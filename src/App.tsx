@@ -1,5 +1,5 @@
-import React, { memo, useEffect , useState ,useRef } from 'react';
-import vis, { type SubGroupStackOptions } from 'vis';
+import React, { useContext , useEffect , useState ,useRef } from 'react';
+import vis from 'vis';
 import Box from '@mui/material/Box';
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
@@ -9,20 +9,43 @@ import Popper from '@mui/material/Popper';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
-import Fade from '@mui/material/Fade';
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
 import './App.css';
 import { Dataset } from '@mui/icons-material';
 
-const timelineOptions = {
-  width: "100%",
+const SelectedShift = React.createContext("");
+const SelectedElem = React.createContext<null | HTMLElement>(null);
+
+const PersonaltimelineOptions = {
+  width: "100vw",
   stack: true, 
   showMajorLabels: true,
   showCurrentTime: true, 
   zoomMin: 10000, 
   type: "range", 
-  maxHeight: '500px', 
-  minHeight: '50px',
+  height: '120px',
+  autoResize: true ,
+  hiddenDates : {start: '2014-03-21 18:00:00', end: '2014-03-22 6:00:00', repeat:'daily'},
+  format: {
+    minorLabels: {
+      minute: 'h:mma',
+      hour: 'ha'
+    }
+  }
+}
+const timelineOptions = {
+  width: "100vw",
+  stack: true, 
+  showMajorLabels: true,
+  showCurrentTime: true, 
+  zoomMax: 100000000,
+  zoomMin: 100000000, 
+  type: "range", 
+  maxHeight: '120vh', 
+  minHeight: '10vh',
+  autoResize: true ,
+  hiddenDates : {start: '2014-03-21 18:00:00', end: '2014-03-22 6:00:00', repeat:'daily'},
+  xss : {disabled : true},
   format: {
     minorLabels: {
       minute: 'h:mma',
@@ -31,8 +54,8 @@ const timelineOptions = {
   }
 }
 
-const groups = [{ id: 1, content: 'HOMOrange type group', },{ id: 2, content: 'Very Homo', }]
-const list = ["ナナフシ","つまようじ","薄型テレビ"];
+const groups = [{ id: 1, content: 'type1', },{ id: 2, content: 'type2', }]
+const memberList = ["ナナフシ","つまようじ","薄型テレビ"];
 
 interface ShiftItem {
   id: number | string;
@@ -48,24 +71,30 @@ interface TimelineProps extends vis.DataSet<ShiftItem>{
 
 let Shiftitems = new vis.DataSet<ShiftItem>();
 Shiftitems.add([
-    {id: 'range-type-class', start: new Date(2018, 2, 20, 10, 10, 0), end: new Date(2018, 2, 20, 11, 9, 0), content: 'range type item', type: 'range', group: 1,},
-    {id: 'range-type-class2', start: new Date(2018, 2, 20, 11, 45, 0), end: new Date(2018, 2, 20, 14, 19, 0), content: "range type item2", type: 'range', group: 1,},
-    {id: 'range-type-class3', start: new Date(2018, 2, 20, 11, 0, 0), end: new Date(2018, 2, 20, 16, 0 , 0), content: "range type item3", type: 'range', group: 2,}
+    {id: 'range-type-class', start: new Date(2018, 2, 20, 10, 10, 0), end: new Date(2018, 2, 20, 11, 9, 0), content: 'シフト1', type: 'range', group: 1,},
+    {id: 'range-type-class2', start: new Date(2018, 2, 20, 11, 45, 0), end: new Date(2018, 2, 20, 14, 19, 0), content: "シフト2", type: 'range', group: 1,},
+    {id: 'range-type-class3', start: new Date(2018, 2, 20, 11, 0, 0), end: new Date(2018, 2, 20, 16, 0 , 0), content: "シフト3", type: 'range', group: 2,}
 ]);
+
 let ShiftMembers = {
-  "range-type-class" : ["ナナフシ","つまようじ","薄型テレビ"],
-  "range-type-class2" : ["ナナフシ","つまようじ"],
-  "range-type-class3" : ["ナナフシ","つまようじ"]
+  "range-type-class" : ["ナナフシ","薄型テレビ"],
+  "range-type-class2" : ["ナナフシ"],
+  "range-type-class3" : ["つまようじ"]
 }
 export default function App(){
   const [user, setUser] = useState("");
-  return (<div><Barr/><p>個人シフト  </p> <TextField id="outlined-basic" label="Outlined" variant="outlined"  onChange={(e) => {
+  return (<div><Barr/><h2>個人シフト  </h2> <TextField id="outlined-basic" label="総務部員" variant="outlined" error helperText = {"該当なし"} onChange={(e) => {
         setUser(e.target.value);
-      }} />   <Timeliner
-      options={timelineOptions}
+
+      }} />
+      <Timeliner
+      options={PersonaltimelineOptions}
       items={searchUsersShift({user})}
-      groups={[{ id: 1, content: 'あなたのシフト' }]}
-    /><p>全体シフト</p><ShiftField /><TestPop /> </div>
+      groups={[{ id: 1, content: `${user}のシフト` }]}
+    /><h2>全体シフト</h2>
+    <Timeliner
+      options={timelineOptions} items={Shiftitems} groups={groups} 
+    /><ShiftPop /><TestPop /> </div>
   );
 }
 
@@ -73,6 +102,8 @@ function searchUsersShift({user} : {user:string}){
   let ans = new vis.DataSet<ShiftItem>();
   Shiftitems.forEach((s) => {
         if(s.id){
+          console.log(s);
+          console.log(user);
           //@ts-ignore
         if(ShiftMembers[s.id].includes(user)) {
           let r = s;
@@ -92,7 +123,7 @@ function TestPop(){
   return(<div><Button onClick={handleClick}>
   Toggle Popper
 </Button>
-<Popper id={id} open={open} anchorEl={anchorEl}>
+<Popper id={id} open={open} anchorEl={anchorEl} placement = {"bottom"}>
   <Box sx={{ border: 1, p: 1 }}>
     <PersonList/>
   </Box>
@@ -100,15 +131,16 @@ function TestPop(){
 }
 
 function ShiftPop(){
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(anchorEl ? null : event.currentTarget);
-  };
+  const anchorEl = useContext(SelectedElem);
+  console.log(anchorEl)
+  const shiftName = useContext(SelectedShift);
   const open = Boolean(anchorEl);
   const id = open ? 'simple-popper' : undefined;
   return(<div>
 <Popper id={id} open={open} anchorEl={anchorEl}>
   <Box sx={{ border: 1, p: 1 ,bgcolor: 'background.paper'}} >
+     <p>{shiftName}</p> 
+     <p><Link>シフト詳細を表示</Link></p>
     <PersonList/>
   </Box>
 </Popper></div>);
@@ -156,28 +188,16 @@ function Person({e} : {e:string} ){
 
 function PersonList(){
   let elm;
-  elm = list.map( v => 
-    <div> <Person e={v} /> </div>
+  elm = memberList.map( v => 
+    <div><Person e={v} /> </div>
   );
   return elm;
 }
 
-function ShiftField(){
-  return (<div>
-    <Timeliner
-      options={timelineOptions} items={Shiftitems} groups={groups} 
-    /><ShiftPop />
-  </div>); 
-}
-
 function Timeliner({options,items,groups} : {options:object,items:TimelineProps ,groups:object[]} ){
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(anchorEl ? null : event.currentTarget);
-  };
-  const open = Boolean(anchorEl);
   const container = useRef<HTMLDivElement>(null);
-  let id = "";   
+  let id = "";
+  let targetElement;   
   useEffect(() => {
     if (!container.current) return;
     console.log(items);
@@ -186,28 +206,14 @@ function Timeliner({options,items,groups} : {options:object,items:TimelineProps 
     timeline.on('select', (event) => {
       if (event.items) {
         id = event.items[0]
-        const targetElement = event.event.srcEvent.target.closest('.vis-item');
-        if(targetElement){
-          setTimeout(() => {
-            setAnchorEl(targetElement);
-          }, 0);
+        const targetEvent = event.event.srcEvent;
+        targetElement = targetEvent.target.closest('.vis-item');
         console.log(targetElement);
-        return;
-        } else {
-          setAnchorEl(null);
-        }
-      } else {
-        setAnchorEl(null);
-      }
-    });
+    }});
     return () => {
       timeline.destroy();
     };
   }, [options, items, groups]);
-  return <div style={{ position: 'relative' }}><div ref={container} /><Popper id={id} open={open} anchorEl={anchorEl} placement="bottom" popperOptions={{
-  }} transition>
-  <Box sx={{ border: 1, p: 1,bgcolor: 'background.paper'}}>
-    <PersonList/>
-  </Box>
-</Popper></div>;
+  //@ts-ignore
+  return <div style={{ position: 'relative' }}><SelectedShift value = {""}><SelectedElem value = {targetElement}><div ref={container} /></SelectedElem></SelectedShift></div>;
 }
