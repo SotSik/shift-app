@@ -44,8 +44,8 @@ const timelineOptions = {
   maxHeight: '120vh', 
   minHeight: '10vh',
   autoResize: true ,
-  hiddenDates : {start: '2014-03-21 18:00:00', end: '2014-03-22 6:00:00', repeat:'daily'},
   xss : {disabled : true},
+  hiddenDates : {start: '2014-03-21 18:00:00', end: '2014-03-22 6:00:00', repeat:'daily'},
   format: {
     minorLabels: {
       minute: 'h:mma',
@@ -81,20 +81,26 @@ let ShiftMembers = {
   "range-type-class2" : ["ナナフシ"],
   "range-type-class3" : ["つまようじ"]
 }
+
 export default function App(){
   const [user, setUser] = useState("");
-  return (<div><Barr/><h2>個人シフト  </h2> <TextField id="outlined-basic" label="総務部員" variant="outlined" error helperText = {"該当なし"} onChange={(e) => {
+  const [selectedElement, setElement] = useState(null);
+  const [selectedShift, setSelectedShift] = useState("");
+  return (<div><SelectedShift value = {selectedShift}><SelectedElem value = {selectedElement}><Barr/><h2>個人シフト  </h2> <TextField id="outlined-basic" label="総務部員" variant="outlined" error helperText = {"該当なし"} onChange={(e) => {
         setUser(e.target.value);
-
       }} />
       <Timeliner
       options={PersonaltimelineOptions}
       items={searchUsersShift({user})}
       groups={[{ id: 1, content: `${user}のシフト` }]}
+      elmfunc={setElement}
+      shiftfunc={setSelectedShift}
     /><h2>全体シフト</h2>
     <Timeliner
       options={timelineOptions} items={Shiftitems} groups={groups} 
-    /><ShiftPop /><TestPop /> </div>
+      elmfunc={setElement}
+      shiftfunc={setSelectedShift}
+    /><ShiftPop /><TestPop /></SelectedElem></SelectedShift></div>
   );
 }
 
@@ -132,13 +138,14 @@ function TestPop(){
 
 function ShiftPop(){
   const anchorEl = useContext(SelectedElem);
-  console.log(anchorEl)
+  console.log(anchorEl);
   const shiftName = useContext(SelectedShift);
   const open = Boolean(anchorEl);
+  console.log(open);
   const id = open ? 'simple-popper' : undefined;
   return(<div>
 <Popper id={id} open={open} anchorEl={anchorEl}>
-  <Box sx={{ border: 1, p: 1 ,bgcolor: 'background.paper'}} >
+  <Box sx={{ border: 1, p: 1 ,bgcolor: 'background.paper'}}>
      <p>{shiftName}</p> 
      <p><Link>シフト詳細を表示</Link></p>
     <PersonList/>
@@ -182,8 +189,8 @@ function Person({e} : {e:string} ){
   const open = Boolean(anchorEl);
   const id = open ? "${anchorEl}Data" : undefined;
   return (<div><Button variant="outlined" onClick = {handleClick}
-  >{e}</Button><Popper id={id} open={open} anchorEl={anchorEl} >
-    <Box sx = {{ border: 1, p: 1, bgcolor : "background.paper"}}><PersonProp p = {e}/></Box></Popper></div>);
+  >{e}</Button><Popper id={id} open={open} anchorEl={anchorEl} popperOptions = {{strategy : "fixed"}}>
+    <Box sx = {{ border: 1, p: 1, bgcolor : "background.paper" , zIndex: 999999}}><PersonProp p = {e}/></Box></Popper></div>);
 }
 
 function PersonList(){
@@ -194,7 +201,7 @@ function PersonList(){
   return elm;
 }
 
-function Timeliner({options,items,groups} : {options:object,items:TimelineProps ,groups:object[]} ){
+function Timeliner({options,items,groups,elmfunc,shiftfunc} : {options:object,items:TimelineProps ,groups:object[],elmfunc:object,shiftfunc:object} ){
   const container = useRef<HTMLDivElement>(null);
   let id = "";
   let targetElement;   
@@ -208,12 +215,16 @@ function Timeliner({options,items,groups} : {options:object,items:TimelineProps 
         id = event.items[0]
         const targetEvent = event.event.srcEvent;
         targetElement = targetEvent.target.closest('.vis-item');
-        console.log(targetElement);
+        //@ts-ignore
+        elmfunc(targetElement);
+        //@ts-ignore
+        shiftfunc("HOMO ");
+        console.log();
     }});
     return () => {
       timeline.destroy();
     };
   }, [options, items, groups]);
   //@ts-ignore
-  return <div style={{ position: 'relative' }}><SelectedShift value = {""}><SelectedElem value = {targetElement}><div ref={container} /></SelectedElem></SelectedShift></div>;
+  return <div style={{ position: 'relative' }}><div ref={container} /></div>;
 }
