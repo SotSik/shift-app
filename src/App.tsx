@@ -44,14 +44,13 @@ const timelineOptions = {
   maxHeight: '120vh', 
   minHeight: '10vh',
   autoResize: true ,
-  xss : {disabled : true},
   hiddenDates : {start: '2014-03-21 18:00:00', end: '2014-03-22 6:00:00', repeat:'daily'},
   format: {
     minorLabels: {
       minute: 'h:mma',
       hour: 'ha'
     }
-  }
+  }                                                                                                                                                                                                                                                                                                                                                                                                                                       
 }
 
 const groups = [{ id: 1, content: 'type1', },{ id: 2, content: 'type2', }]
@@ -129,7 +128,8 @@ function TestPop(){
   return(<div><Button onClick={handleClick}>
   Toggle Popper
 </Button>
-<Popper id={id} open={open} anchorEl={anchorEl} placement = {"bottom"}>
+<Popper id={id} open={open} anchorEl={anchorEl} placement = {"bottom"} disablePortal={false} // ★HTMLの構造を<body>直下に脱出させる
+  style={{ zIndex: 114514  }} >
   <Box sx={{ border: 1, p: 1 }}>
     <PersonList/>
   </Box>
@@ -204,7 +204,6 @@ function PersonList(){
 function Timeliner({options,items,groups,elmfunc,shiftfunc} : {options:object,items:TimelineProps ,groups:object[],elmfunc:object,shiftfunc:object} ){
   const container = useRef<HTMLDivElement>(null);
   let id = "";
-  let targetElement;   
   useEffect(() => {
     if (!container.current) return;
     console.log(items);
@@ -214,11 +213,13 @@ function Timeliner({options,items,groups,elmfunc,shiftfunc} : {options:object,it
       if (event.items) {
         id = event.items[0]
         const targetEvent = event.event.srcEvent;
-        targetElement = targetEvent.target.closest('.vis-item');
+        const targetElement = targetEvent.target.closest(".vis-item");
+        const Shiftname = targetElement.getElementsByClassName("vis-item-content");
+        console.log(Shiftname);
         //@ts-ignore
         elmfunc(targetElement);
         //@ts-ignore
-        shiftfunc("HOMO ");
+        shiftfunc(Shiftname);
         console.log();
     }});
     return () => {
