@@ -15,6 +15,7 @@ import './App.css';
 
 const SelectedShift = React.createContext<string>("");
 const SelectedElem = React.createContext<null | HTMLElement>(null);
+const personalGroup = [{ id: 1, content: "個人シフト" }];
 
 const PersonaltimelineOptions = {
   width: "100vw",
@@ -104,31 +105,32 @@ export default function App(){
 }
 
 function PersonalSpace({elmfunc,shiftfunc} : {elmfunc:object,shiftfunc:object}){
-    const [user, setUser] = useState("");
-    const useritem = searchUsersShift({user});
+    const [useritem, setUserItem] = useState(searchUsersShift(""));
     const found = Boolean(useritem.length);
     console.log(useritem);
-    const [cookies, setCookie, removeCookie] = useCookies();
     return (<div><TextField id="outlined-basic" label="総務部員" variant="outlined" 
       error={!found} helperText = {found ? "　" : "該当なし"} 
-      onChange={(e) => {
-        setUser(e.target.value);
+      onChange={(e:object) => {
+        const user = e.target.value;
+        setUserItem(searchUsersShift(user));
+        console.log(user);
       }} />
       <Timeliner
       options={PersonaltimelineOptions}
       items={useritem}
-      groups={[{ id: 1, content: `${user}のシフト` }]}
+      groups={personalGroup}
       elmfunc={elmfunc}
       shiftfunc={shiftfunc}
     /></div>);
 }
 
-function searchUsersShift({user,sucfunc} : {user:string,sucfunc:object}){
+function searchUsersShift(user : string){
   let ans = new vis.DataSet<ShiftItem>();
+  console.log(user);
   Shiftitems.forEach((s) => {
         if(s.id){
           console.log(s);
-          console.log(user);
+          //@ts-ignore
         if(ShiftMembers[s.id].includes(user)) {
           let r = s;
           r.group = 1;
@@ -178,7 +180,7 @@ function PersonProp({p}:{p:string}){
   return (<div>
     <p>{p}</p>
     <p>シフト回数:3</p>
-  <p><Link>ほかのシフトを表示</Link></p>
+  <p><Link>ほかのシフトを表示</Link></p>  
   <p><Link>交代</Link></p></div>);
 }
 
