@@ -13,3 +13,9 @@
   padding: 20px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
+.vis-timeline,
+.vis-item,
+.vis-item.vis-selected,
+.vis-tooltip {
+  z-index: 0 !important; /* 必要に応じて数値を調整してください */
+}

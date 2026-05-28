@@ -9,11 +9,11 @@ import Popper from '@mui/material/Popper';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
+import { useCookies } from "react-cookie";
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
 import './App.css';
-import { Dataset } from '@mui/icons-material';
 
-const SelectedShift = React.createContext("");
+const SelectedShift = React.createContext<string>("");
 const SelectedElem = React.createContext<null | HTMLElement>(null);
 
 const PersonaltimelineOptions = {
@@ -76,25 +76,25 @@ Shiftitems.add([
 ]);
 
 let ShiftMembers = {
-  "range-type-class" : ["ナナフシ","薄型テレビ"],
+  "range-type-class" : ["ナナフシ","薄型テレビ","シャンシャン","タンバ","西田ゲリオン","タンバリン","帰れ","帰ります"],
   "range-type-class2" : ["ナナフシ"],
   "range-type-class3" : ["つまようじ"]
 }
 
+let ShiftNames = {
+  "range-type-class":"シフト1",
+  "range-type-class2" : "シフト2",
+  "range-type-class3" : "シフト3" 
+}
+
 export default function App(){
-  const [user, setUser] = useState("");
   const [selectedElement, setElement] = useState(null);
   const [selectedShift, setSelectedShift] = useState("");
-  return (<div><SelectedShift value = {selectedShift}><SelectedElem value = {selectedElement}><Barr/><h2>個人シフト  </h2> <TextField id="outlined-basic" label="総務部員" variant="outlined" error helperText = {"該当なし"} onChange={(e) => {
-        setUser(e.target.value);
-      }} />
-      <Timeliner
-      options={PersonaltimelineOptions}
-      items={searchUsersShift({user})}
-      groups={[{ id: 1, content: `${user}のシフト` }]}
-      elmfunc={setElement}
-      shiftfunc={setSelectedShift}
-    /><h2>全体シフト</h2>
+  return (<div><SelectedShift value = {selectedShift}><SelectedElem value = {selectedElement}><Barr/>
+    <h2>個人シフト  </h2>
+      <PersonalSpace elmfunc={setElement}
+      shiftfunc={setSelectedShift}/> 
+    <h2>全体シフト</h2>
     <Timeliner
       options={timelineOptions} items={Shiftitems} groups={groups} 
       elmfunc={setElement}
@@ -103,13 +103,32 @@ export default function App(){
   );
 }
 
-function searchUsersShift({user} : {user:string}){
+function PersonalSpace({elmfunc,shiftfunc} : {elmfunc:object,shiftfunc:object}){
+    const [user, setUser] = useState("");
+    const useritem = searchUsersShift({user});
+    const found = Boolean(useritem.length);
+    console.log(useritem);
+    const [cookies, setCookie, removeCookie] = useCookies();
+    return (<div><TextField id="outlined-basic" label="総務部員" variant="outlined" 
+      error={!found} helperText = {found ? "　" : "該当なし"} 
+      onChange={(e) => {
+        setUser(e.target.value);
+      }} />
+      <Timeliner
+      options={PersonaltimelineOptions}
+      items={useritem}
+      groups={[{ id: 1, content: `${user}のシフト` }]}
+      elmfunc={elmfunc}
+      shiftfunc={shiftfunc}
+    /></div>);
+}
+
+function searchUsersShift({user,sucfunc} : {user:string,sucfunc:object}){
   let ans = new vis.DataSet<ShiftItem>();
   Shiftitems.forEach((s) => {
         if(s.id){
           console.log(s);
           console.log(user);
-          //@ts-ignore
         if(ShiftMembers[s.id].includes(user)) {
           let r = s;
           r.group = 1;
@@ -131,7 +150,7 @@ function TestPop(){
 <Popper id={id} open={open} anchorEl={anchorEl} placement = {"bottom"} disablePortal={false} // ★HTMLの構造を<body>直下に脱出させる
   style={{ zIndex: 114514  }} >
   <Box sx={{ border: 1, p: 1 }}>
-    <PersonList/>
+    <PersonList member = {memberList}/>
   </Box>
 </Popper></div>);
 }
@@ -139,16 +158,18 @@ function TestPop(){
 function ShiftPop(){
   const anchorEl = useContext(SelectedElem);
   console.log(anchorEl);
-  const shiftName = useContext(SelectedShift);
+  const sid = useContext(SelectedShift);
+  console.log(sid);
   const open = Boolean(anchorEl);
-  console.log(open);
-  const id = open ? 'simple-popper' : undefined;
+  //@ts-ignore
+  const name = ShiftNames[sid];
+  const id = open ? 'popper' : undefined;
   return(<div>
-<Popper id={id} open={open} anchorEl={anchorEl}>
-  <Box sx={{ border: 1, p: 1 ,bgcolor: 'background.paper'}}>
-     <p>{shiftName}</p> 
-     <p><Link>シフト詳細を表示</Link></p>
-    <PersonList/>
+<Popper id={id} open={open} anchorEl={anchorEl} style = {{width:"384px"}}>
+  <Box sx={{ border: 1, p: 1 ,bgcolor: 'background.paper',zIndex: 9999}}>
+     <p>{name}</p> 
+     <p><a href = {`../src/pdfs/${name}.pdf`} target="_blank">シフト詳細を表示</a></p>
+    <PersonList member = {ShiftMembers[sid]}/>
   </Box>
 </Popper></div>);
 }
@@ -188,39 +209,41 @@ function Person({e} : {e:string} ){
   };
   const open = Boolean(anchorEl);
   const id = open ? "${anchorEl}Data" : undefined;
-  return (<div><Button variant="outlined" onClick = {handleClick}
+  return (<span><Button variant="outlined" onClick = {handleClick}
   >{e}</Button><Popper id={id} open={open} anchorEl={anchorEl} popperOptions = {{strategy : "fixed"}}>
-    <Box sx = {{ border: 1, p: 1, bgcolor : "background.paper" , zIndex: 999999}}><PersonProp p = {e}/></Box></Popper></div>);
+    <Box sx = {{ border: 1, p: 1, bgcolor : "background.paper" , zIndex: 999999}}><PersonProp p = {e}/></Box></Popper></span>);
 }
 
-function PersonList(){
-  let elm;
-  elm = memberList.map( v => 
-    <div><Person e={v} /> </div>
-  );
-  return elm;
+function PersonList({member} : {member:string[]}){
+  return( member.map( (v) => 
+    <Person e={v} />
+  ));
 }
 
 function Timeliner({options,items,groups,elmfunc,shiftfunc} : {options:object,items:TimelineProps ,groups:object[],elmfunc:object,shiftfunc:object} ){
   const container = useRef<HTMLDivElement>(null);
-  let id = "";
   useEffect(() => {
     if (!container.current) return;
     console.log(items);
     console.log(groups);
+    let id;
     let timeline = new vis.Timeline(container.current, items, groups, options);
     timeline.on('select', (event) => {
       if (event.items) {
-        id = event.items[0]
         const targetEvent = event.event.srcEvent;
         const targetElement = targetEvent.target.closest(".vis-item");
-        const Shiftname = targetElement.getElementsByClassName("vis-item-content");
-        console.log(Shiftname);
+        if(targetElement){
+        id = event.items[0];
         //@ts-ignore
         elmfunc(targetElement);
         //@ts-ignore
-        shiftfunc(Shiftname);
-        console.log();
+        shiftfunc(id);
+        } else {
+          //@ts-ignore
+          elmfunc(null);
+          //@ts-ignore
+          shiftfunc("パラオナボーイ 作詞:拓也");
+        }
     }});
     return () => {
       timeline.destroy();
