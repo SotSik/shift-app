@@ -9,7 +9,11 @@ import Popper from '@mui/material/Popper';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
-import { useCookies } from "react-cookie";
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
 import './App.css';
 
@@ -24,7 +28,7 @@ const PersonaltimelineOptions = {
   showCurrentTime: true, 
   zoomMin: 10000, 
   type: "range", 
-  height: '120px',
+  height: '135px',
   autoResize: true ,
   hiddenDates : {start: '2014-03-21 18:00:00', end: '2014-03-22 6:00:00', repeat:'daily'},
   format: {
@@ -105,15 +109,19 @@ export default function App(){
 }
 
 function PersonalSpace({elmfunc,shiftfunc} : {elmfunc:object,shiftfunc:object}){
-    const [useritem, setUserItem] = useState(searchUsersShift(""));
+    const defaultUser = localStorage.getItem("user");
+    const defaultItem = searchUsersShift(defaultUser);
+    const [useritem, setUserItem] = useState(defaultItem);
     const found = Boolean(useritem.length);
     console.log(useritem);
     return (<div><TextField id="outlined-basic" label="総務部員" variant="outlined" 
       error={!found} helperText = {found ? "　" : "該当なし"} 
+      defaultValue = {defaultUser}
       onChange={(e:object) => {
         const user = e.target.value;
         setUserItem(searchUsersShift(user));
         console.log(user);
+        localStorage.setItem("user", user);        
       }} />
       <Timeliner
       options={PersonaltimelineOptions}
@@ -177,11 +185,32 @@ function ShiftPop(){
 }
 
 function PersonProp({p}:{p:string}){
+  const [open, setOpen] = React.useState(false);
   return (<div>
     <p>{p}</p>
     <p>シフト回数:3</p>
   <p><Link>ほかのシフトを表示</Link></p>  
-  <p><Link>交代</Link></p></div>);
+  <p><Link onClick = {() => {
+    setOpen(true);}}>交代</Link>
+  <Dialog
+        open={open}
+        onClose={() => {setOpen(false);}}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        role="alertdialog"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"シフトの交代を申請しますか?"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {setOpen(false);}} autoFocus> いいえ</Button>
+          <Button onClick={() => {setOpen(false);}}>はい</Button>
+        </DialogActions>
+      </Dialog></p></div>);
 }
 
 function Barr(){
