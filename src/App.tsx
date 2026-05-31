@@ -93,35 +93,41 @@ let ShiftNames = {
 }
 
 export default function App(){
+  const defaultUser = localStorage.getItem("user");
   const [selectedElement, setElement] = useState(null);
   const [selectedShift, setSelectedShift] = useState("");
+  const [user, setUser] = useState(defaultUser as string);
+  const [otherMember, setOtherMember] = useState([] as string[]);
   return (<div><SelectedShift value = {selectedShift}><SelectedElem value = {selectedElement}><Barr/>
     <h2>個人シフト  </h2>
-      <PersonalSpace elmfunc={setElement}
+      <PersonalSpace user = {user} userChange = {setUser} elmfunc={setElement}
       shiftfunc={setSelectedShift}/> 
+      <Other member={otherMember} elmfunc={setElement} shiftfunc={setSelectedShift} />
     <h2>全体シフト</h2>
     <Timeliner
       options={timelineOptions} items={Shiftitems} groups={groups} 
       elmfunc={setElement}
       shiftfunc={setSelectedShift}
-    /><ShiftPop /><TestPop /></SelectedElem></SelectedShift></div>
+    /><ShiftPop setOthers = {setOtherMember}/><TestPop /></SelectedElem></SelectedShift></div>
   );
 }
 
-function PersonalSpace({elmfunc,shiftfunc} : {elmfunc:object,shiftfunc:object}){
+function PersonalSpace({user,userChange,elmfunc,shiftfunc} : {user:string,userChange:object,elmfunc:object,shiftfunc:object}){
     const defaultUser = localStorage.getItem("user");
-    const defaultItem = searchUsersShift(defaultUser);
+    const defaultItem = searchUsersShift(defaultUser as string);
     const [useritem, setUserItem] = useState(defaultItem);
     const found = Boolean(useritem.length);
     console.log(useritem);
     return (<div><TextField id="outlined-basic" label="総務部員" variant="outlined" 
       error={!found} helperText = {found ? "　" : "該当なし"} 
       defaultValue = {defaultUser}
-      onChange={(e:object) => {
-        const user = e.target.value;
-        setUserItem(searchUsersShift(user));
-        console.log(user);
-        localStorage.setItem("user", user);        
+      value = {user}
+      onChange={(e) => {
+        const u = e.target.value;
+        userChange(u);
+        setUserItem(searchUsersShift(u));
+        console.log(u);
+        localStorage.setItem("user", u);        
       }} />
       <Timeliner
       options={PersonaltimelineOptions}
@@ -138,13 +144,31 @@ function searchUsersShift(user : string){
   Shiftitems.forEach((s) => {
         if(s.id){
           console.log(s);
-          //@ts-ignore
         if(ShiftMembers[s.id].includes(user)) {
           let r = s;
           r.group = 1;
           ans.add(r);
   } }});
   return ans;
+}
+
+function Other({member,elmfunc,shiftfunc} : {member:string[],elmfunc:object,shiftfunc:object}){
+  return( member.map((s) => 
+  <OthersSpace user = {s} elmfunc = {elmfunc} shiftfunc = {shiftfunc}/>
+  ));
+}
+
+function OthersSpace({user,elmfunc,shiftfunc} : {user:string,elmfunc:object,shiftfunc:object}){
+    const defaultUser = user;
+    const defaultItem = searchUsersShift(defaultUser as string);
+    return (<div>
+      <Timeliner
+      options={PersonaltimelineOptions}
+      items={defaultItem}
+      groups={personalGroup}
+      elmfunc={elmfunc}
+      shiftfunc={shiftfunc}
+    /></div>);
 }
 
 function TestPop(){
@@ -165,7 +189,7 @@ function TestPop(){
 </Popper></div>);
 }
 
-function ShiftPop(){
+function ShiftPop({setOthers} : {setOthers : object}){
   const anchorEl = useContext(SelectedElem);
   console.log(anchorEl);
   const sid = useContext(SelectedShift);
@@ -179,17 +203,22 @@ function ShiftPop(){
   <Box sx={{ border: 1, p: 1 ,bgcolor: 'background.paper',zIndex: 9999}}>
      <p>{name}</p> 
      <p><a href = {`../src/pdfs/${name}.pdf`} target="_blank">シフト詳細を表示</a></p>
-    <PersonList member = {ShiftMembers[sid]}/>
+    <PersonList member = {ShiftMembers[sid]} setOthers = {setOthers}/>
   </Box>
 </Popper></div>);
 }
 
-function PersonProp({p}:{p:string}){
+function PersonProp({p,setOthers}:{p:string,setOthers:object}){
   const [open, setOpen] = React.useState(false);
+  const sid = useContext(SelectedShift);
+  const name = ShiftNames[sid];
+  const user = localStorage.getItem("user");
   return (<div>
     <p>{p}</p>
     <p>シフト回数:3</p>
-  <p><Link>ほかのシフトを表示</Link></p>  
+  <p><Link onClick = {(e) => {
+      setOthers([e.eventPhase.value]);
+    }}>ほかのシフトを表示</Link></p>  
   <p><Link onClick = {() => {
     setOpen(true);}}>交代</Link>
   <Dialog
@@ -204,6 +233,8 @@ function PersonProp({p}:{p:string}){
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
+            <p>{"交代シフト:" + name}</p>
+            <p>{p + "=>" + user}</p>
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -233,7 +264,7 @@ function Barr(){
   );
 }
 
-function Person({e} : {e:string} ){
+function Person({e,setOthers} : {e:string,setOthers:object} ){
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(anchorEl ? null : event.currentTarget);
@@ -242,12 +273,12 @@ function Person({e} : {e:string} ){
   const id = open ? "${anchorEl}Data" : undefined;
   return (<span><Button variant="outlined" onClick = {handleClick}
   >{e}</Button><Popper id={id} open={open} anchorEl={anchorEl} popperOptions = {{strategy : "fixed"}}>
-    <Box sx = {{ border: 1, p: 1, bgcolor : "background.paper" , zIndex: 999999}}><PersonProp p = {e}/></Box></Popper></span>);
+    <Box sx = {{ border: 1, p: 1, bgcolor : "background.paper" , zIndex: 999999}}><PersonProp p = {e} setOthers = {setOthers}/></Box></Popper></span>);
 }
 
-function PersonList({member} : {member:string[]}){
+function PersonList({member,setOthers} : {member:string[],setOthers:object}){
   return( member.map( (v) => 
-    <Person e={v} />
+    <Person e={v} setOthers = {setOthers}/>
   ));
 }
 
