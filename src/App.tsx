@@ -92,6 +92,26 @@ let ShiftNames = {
   "range-type-class3" : "シフト3" 
 }
 
+function Barr(){
+    return (
+    <div >
+      <AppBar position="static">
+        <Toolbar>
+          <IconButton
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+          >
+          </IconButton>
+          <Typography variant="h6">
+            シフト管理システム
+          </Typography>
+        </Toolbar>
+      </AppBar>
+    </div>
+  );
+}
+
 export default function App(){
   const defaultUser = localStorage.getItem("user");
   const [selectedElement, setElement] = useState(null);
@@ -108,11 +128,31 @@ export default function App(){
       options={timelineOptions} items={Shiftitems} groups={groups} 
       elmfunc={setElement}
       shiftfunc={setSelectedShift}
-    /><ShiftPop setOthers = {setOtherMember}/><TestPop /></SelectedElem></SelectedShift></div>
+    /><ShiftPop member = {otherMember} setOthers = {setOtherMember}/></SelectedElem></SelectedShift></div>
   );
 }
 
-function PersonalSpace({user,userChange,elmfunc,shiftfunc} : {user:string,userChange:object,elmfunc:object,shiftfunc:object}){
+function Other({member,elmfunc,shiftfunc} : {member:string[],elmfunc:any,shiftfunc:any}){
+  console.log(member);
+  return( member.map((s) => {
+      return(<Otherrow s = {s} elmfunc = {elmfunc} shiftfunc = {shiftfunc} />);
+    }));
+}
+
+function Otherrow({s,elmfunc,shiftfunc} : {s:string,elmfunc:any,shiftfunc:any}){
+    const [useritem] = useState(() => searchUsersShift(s));
+    const pgroup = React.useMemo(() => [{ id: 1, content: s }], [s]);
+    return(<div>
+      <Timeliner
+      options={PersonaltimelineOptions}
+      items={useritem}
+      groups={pgroup}
+      elmfunc={elmfunc}
+      shiftfunc={shiftfunc}
+    /></div>);
+}
+
+function PersonalSpace({user,userChange,elmfunc,shiftfunc} : {user:string,userChange:any,elmfunc:any,shiftfunc:any}){
     const defaultUser = localStorage.getItem("user");
     const defaultItem = searchUsersShift(defaultUser as string);
     const [useritem, setUserItem] = useState(defaultItem);
@@ -152,44 +192,7 @@ function searchUsersShift(user : string){
   return ans;
 }
 
-function Other({member,elmfunc,shiftfunc} : {member:string[],elmfunc:object,shiftfunc:object}){
-  return( member.map((s) => 
-  <OthersSpace user = {s} elmfunc = {elmfunc} shiftfunc = {shiftfunc}/>
-  ));
-}
-
-function OthersSpace({user,elmfunc,shiftfunc} : {user:string,elmfunc:object,shiftfunc:object}){
-    const defaultUser = user;
-    const defaultItem = searchUsersShift(defaultUser as string);
-    return (<div>
-      <Timeliner
-      options={PersonaltimelineOptions}
-      items={defaultItem}
-      groups={personalGroup}
-      elmfunc={elmfunc}
-      shiftfunc={shiftfunc}
-    /></div>);
-}
-
-function TestPop(){
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(anchorEl ? null : event.currentTarget);
-  };
-  const open = Boolean(anchorEl);
-  const id = open ? 'simple-popper' : undefined;
-  return(<div><Button onClick={handleClick}>
-  Toggle Popper
-</Button>
-<Popper id={id} open={open} anchorEl={anchorEl} placement = {"bottom"} disablePortal={false} // ★HTMLの構造を<body>直下に脱出させる
-  style={{ zIndex: 114514  }} >
-  <Box sx={{ border: 1, p: 1 }}>
-    <PersonList member = {memberList}/>
-  </Box>
-</Popper></div>);
-}
-
-function ShiftPop({setOthers} : {setOthers : object}){
+function ShiftPop({member,setOthers} : {member : string [],setOthers : any}){
   const anchorEl = useContext(SelectedElem);
   console.log(anchorEl);
   const sid = useContext(SelectedShift);
@@ -198,17 +201,37 @@ function ShiftPop({setOthers} : {setOthers : object}){
   //@ts-ignore
   const name = ShiftNames[sid];
   const id = open ? 'popper' : undefined;
+  const shiftPeople = ShiftMembers[sid];
   return(<div>
 <Popper id={id} open={open} anchorEl={anchorEl} style = {{width:"384px"}}>
   <Box sx={{ border: 1, p: 1 ,bgcolor: 'background.paper',zIndex: 9999}}>
      <p>{name}</p> 
      <p><a href = {`../src/pdfs/${name}.pdf`} target="_blank">シフト詳細を表示</a></p>
-    <PersonList member = {ShiftMembers[sid]} setOthers = {setOthers}/>
+    <PersonList member = {member} shiftPeople = {shiftPeople} setOthers = {setOthers}/>
   </Box>
 </Popper></div>);
 }
 
-function PersonProp({p,setOthers}:{p:string,setOthers:object}){
+function PersonList({member,shiftPeople,setOthers} : {member:string[],shiftPeople:string[],setOthers:any}){
+  return( shiftPeople.map( (v:string) => 
+    <Person member = {member} v = {v} setOthers = {setOthers}/>
+));
+}
+
+function Person({member,v,setOthers}  : {member:string[],v:string,setOthers:any}){
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(anchorEl ? null : event.currentTarget);
+  };
+  const open = Boolean(anchorEl);
+  const id = open ? "${anchorEl}Data" : undefined;
+  return (<span><Button variant="outlined" onClick = {handleClick}
+  >{v}</Button><Popper id={id} open={open} anchorEl={anchorEl} popperOptions = {{strategy : "fixed"}}>
+    <Box sx = {{ border: 1, p: 1, bgcolor : "background.paper" , zIndex: 999999}}>
+    <PersonProp member = {member} p = {v} setOthers = {setOthers} closefunc = {setAnchorEl}/></Box></Popper></span>);
+}
+
+function PersonProp({member,p,setOthers,closefunc}:{member:string[],p:string,setOthers:any,closefunc:any}){
   const [open, setOpen] = React.useState(false);
   const sid = useContext(SelectedShift);
   const name = ShiftNames[sid];
@@ -216,14 +239,23 @@ function PersonProp({p,setOthers}:{p:string,setOthers:object}){
   return (<div>
     <p>{p}</p>
     <p>シフト回数:3</p>
-  <p><Link onClick = {(e) => {
-      setOthers([e.eventPhase.value]);
+  <p><Link onClick = {() => {
+      const u = p;
+      console.log(u);
+      if(!member.includes(u)){
+        setOthers([...member,u]);
+        closefunc(null);
+      }
     }}>ほかのシフトを表示</Link></p>  
   <p><Link onClick = {() => {
-    setOpen(true);}}>交代</Link>
+    setOpen(true);
+}}>交代</Link>
   <Dialog
         open={open}
-        onClose={() => {setOpen(false);}}
+        onClose={() => {
+          setOpen(false);
+          closefunc(null);
+          }}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
         role="alertdialog"
@@ -244,45 +276,7 @@ function PersonProp({p,setOthers}:{p:string,setOthers:object}){
       </Dialog></p></div>);
 }
 
-function Barr(){
-    return (
-    <div >
-      <AppBar position="static">
-        <Toolbar>
-          <IconButton
-            edge="start"
-            color="inherit"
-            aria-label="menu"
-          >
-          </IconButton>
-          <Typography variant="h6">
-            シフト管理システム
-          </Typography>
-        </Toolbar>
-      </AppBar>
-    </div>
-  );
-}
-
-function Person({e,setOthers} : {e:string,setOthers:object} ){
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(anchorEl ? null : event.currentTarget);
-  };
-  const open = Boolean(anchorEl);
-  const id = open ? "${anchorEl}Data" : undefined;
-  return (<span><Button variant="outlined" onClick = {handleClick}
-  >{e}</Button><Popper id={id} open={open} anchorEl={anchorEl} popperOptions = {{strategy : "fixed"}}>
-    <Box sx = {{ border: 1, p: 1, bgcolor : "background.paper" , zIndex: 999999}}><PersonProp p = {e} setOthers = {setOthers}/></Box></Popper></span>);
-}
-
-function PersonList({member,setOthers} : {member:string[],setOthers:object}){
-  return( member.map( (v) => 
-    <Person e={v} setOthers = {setOthers}/>
-  ));
-}
-
-function Timeliner({options,items,groups,elmfunc,shiftfunc} : {options:object,items:TimelineProps ,groups:object[],elmfunc:object,shiftfunc:object} ){
+function Timeliner({options,items,groups,elmfunc,shiftfunc} : {options:object,items:TimelineProps ,groups:object[],elmfunc:any,shiftfunc:any} ){
   const container = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!container.current) return;
