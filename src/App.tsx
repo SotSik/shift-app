@@ -21,12 +21,13 @@ const SelectedShift = React.createContext<string>("");
 const SelectedElem = React.createContext<null | HTMLElement>(null);
 const personalGroup = [{ id: 1, content: "個人シフト" }];
 
-const PersonaltimelineOptions = {
+const PersonaltimelineOptions_S = {
   width: "100vw",
   stack: true, 
   showMajorLabels: true,
   showCurrentTime: true, 
-  zoomMin: 10000, 
+  zoomMax: 172800000,
+  zoomMin: 14400000, 
   type: "range", 
   height: '135px',
   autoResize: true ,
@@ -38,18 +39,58 @@ const PersonaltimelineOptions = {
     }
   }
 }
-const timelineOptions = {
+
+const PersonaltimelineOptions_L = {
   width: "100vw",
   stack: true, 
   showMajorLabels: true,
   showCurrentTime: true, 
-  zoomMax: 100000000,
-  zoomMin: 100000000, 
+  zoomMax: 172800000,
+  zoomMin: 14400000, 
+  type: "range", 
+  height: '135px',
+  autoResize: true ,
+  hiddenDates : {start: '2014-03-21 18:00:00', end: '2014-03-22 6:00:00', repeat:'daily'},
+  format: {
+    minorLabels: {
+      minute: 'h:mma',
+      hour: 'ha'
+    }
+  }
+}
+
+const timelineOptions_S = {
+  width: "100vw",
+  stack: true, 
+  showMajorLabels: true,
+  showCurrentTime: true, 
+  zoomMax: 172800000,
+  zoomMin: 14400000, 
   type: "range", 
   maxHeight: '120vh', 
   minHeight: '10vh',
   autoResize: true ,
-  hiddenDates : {start: '2014-03-21 18:00:00', end: '2014-03-22 6:00:00', repeat:'daily'},
+  hiddenDates : {start: '2014-03-21 20:00:00', end: '2014-03-22 6:00:00', repeat:'daily'},
+  format: {
+    minorLabels: {
+      minute: 'h:mma',
+      hour: 'ha'
+    }
+  }                                                                                                                                                                                                                                                                                                                                                                                                                                       
+}
+
+const timelineOptions_L = {
+  width: "100vw",
+  stack: true, 
+  showMajorLabels: true,
+  showCurrentTime: true, 
+  zoomMax: 172800000,
+  zoomMin: 14400000, 
+  type: "range", 
+  maxHeight: '120vh', 
+  minHeight: '10vh',
+  autoResize: true ,
+  hiddenDates : {start: '2014-03-21 20:00:00', end: '2014-03-22 6:00:00', repeat:'daily'},
   format: {
     minorLabels: {
       minute: 'h:mma',
@@ -79,6 +120,12 @@ Shiftitems.add([
     {id: 'range-type-class2', start: new Date(2018, 2, 20, 11, 45, 0), end: new Date(2018, 2, 20, 14, 19, 0), content: "シフト2", type: 'range', group: 1,},
     {id: 'range-type-class3', start: new Date(2018, 2, 20, 11, 0, 0), end: new Date(2018, 2, 20, 16, 0 , 0), content: "シフト3", type: 'range', group: 2,}
 ]);
+
+let ShiftInfo = {
+  "range-type-class" : {name : "シフト1",member : ["ナナフシ","薄型テレビ","シャンシャン","タンバ","西田ゲリオン","タンバリン","帰れ","帰ります"]},
+  "range-type-class2" : {name : "シフト2",member : ["ナナフシ"]},
+  "range-type-class3" : {name : "シフト3",member : ["つまようじ"]}  
+}
 
 let ShiftMembers = {
   "range-type-class" : ["ナナフシ","薄型テレビ","シャンシャン","タンバ","西田ゲリオン","タンバリン","帰れ","帰ります"],
@@ -118,17 +165,16 @@ export default function App(){
   const [selectedShift, setSelectedShift] = useState("");
   const [user, setUser] = useState(defaultUser as string);
   const [otherMember, setOtherMember] = useState([] as string[]);
-  return (<div><SelectedShift value = {selectedShift}><SelectedElem value = {selectedElement}><Barr/>
-    <h2>個人シフト  </h2>
-      <PersonalSpace user = {user} userChange = {setUser} elmfunc={setElement}
-      shiftfunc={setSelectedShift}/> 
+  return (<div><SelectedShift.Provider value = {selectedShift}><SelectedElem.Provider value = {selectedElement}><Barr/>
+    <h2>個人シフト</h2>  <PersonalSpace user = {user} userChange = {setUser} elmfunc={setElement}
+      shiftfunc={setSelectedShift}/>
       <Other member={otherMember} elmfunc={setElement} shiftfunc={setSelectedShift} />
     <h2>全体シフト</h2>
     <Timeliner
-      options={timelineOptions} items={Shiftitems} groups={groups} 
+      options={timelineOptions_S} items={Shiftitems} groups={groups} 
       elmfunc={setElement}
       shiftfunc={setSelectedShift}
-    /><ShiftPop member = {otherMember} setOthers = {setOtherMember}/></SelectedElem></SelectedShift></div>
+    /><ShiftPop member = {otherMember} setOthers = {setOtherMember}/></SelectedElem.Provider></SelectedShift.Provider></div>
   );
 }
 
@@ -144,7 +190,7 @@ function Otherrow({s,elmfunc,shiftfunc} : {s:string,elmfunc:any,shiftfunc:any}){
     const pgroup = React.useMemo(() => [{ id: 1, content: s }], [s]);
     return(<div>
       <Timeliner
-      options={PersonaltimelineOptions}
+      options={PersonaltimelineOptions_S}
       items={useritem}
       groups={pgroup}
       elmfunc={elmfunc}
@@ -153,12 +199,21 @@ function Otherrow({s,elmfunc,shiftfunc} : {s:string,elmfunc:any,shiftfunc:any}){
 }
 
 function PersonalSpace({user,userChange,elmfunc,shiftfunc} : {user:string,userChange:any,elmfunc:any,shiftfunc:any}){
-    const defaultUser = localStorage.getItem("user");
+    let defaultUser = localStorage.getItem("user");
+    useEffect(() => {
+      if(!defaultUser){
+        const u = prompt("あなたの総務ネームを入力..");
+        defaultUser = u;
+        setUserItem(searchUsersShift(u as string));
+        localStorage.setItem("user", u as string);   
+        userChange(defaultUser);
+      }
+    }, []);
     const defaultItem = searchUsersShift(defaultUser as string);
     const [useritem, setUserItem] = useState(defaultItem);
     const found = Boolean(useritem.length);
     console.log(useritem);
-    return (<div><TextField id="outlined-basic" label="総務部員" variant="outlined" 
+    return (<div><TextField id="outlined-basic" label="総務ネーム" variant="outlined" 
       error={!found} helperText = {found ? "　" : "該当なし"} 
       defaultValue = {defaultUser}
       value = {user}
@@ -170,7 +225,7 @@ function PersonalSpace({user,userChange,elmfunc,shiftfunc} : {user:string,userCh
         localStorage.setItem("user", u);        
       }} />
       <Timeliner
-      options={PersonaltimelineOptions}
+      options={PersonaltimelineOptions_S}
       items={useritem}
       groups={personalGroup}
       elmfunc={elmfunc}
@@ -184,6 +239,7 @@ function searchUsersShift(user : string){
   Shiftitems.forEach((s) => {
         if(s.id){
           console.log(s);
+          //@ts-ignore
         if(ShiftMembers[s.id].includes(user)) {
           let r = s;
           r.group = 1;
@@ -201,11 +257,26 @@ function ShiftPop({member,setOthers} : {member : string [],setOthers : any}){
   //@ts-ignore
   const name = ShiftNames[sid];
   const id = open ? 'popper' : undefined;
+  //@ts-ignore
   const shiftPeople = ShiftMembers[sid];
+  let selectedItemInfo = Shiftitems.get({
+  filter: function (item) {
+    return item.id == sid;
+  }
+  });
+  if(!selectedItemInfo[0]){
+      selectedItemInfo = Shiftitems.get({
+    filter: function (item) {
+      return item.id == "range-type-class";
+      }
+    });
+  }
+  const info = selectedItemInfo[0];
   return(<div>
 <Popper id={id} open={open} anchorEl={anchorEl} style = {{width:"384px"}}>
   <Box sx={{ border: 1, p: 1 ,bgcolor: 'background.paper',zIndex: 9999}}>
      <p>{name}</p> 
+     <p>{strDate(info.start) + " " + strTime(info.start) + " ~ " + strTime(info.end)}</p>
      <p><a href = {`../src/pdfs/${name}.pdf`} target="_blank">シフト詳細を表示</a></p>
     <PersonList member = {member} shiftPeople = {shiftPeople} setOthers = {setOthers}/>
   </Box>
@@ -225,29 +296,55 @@ function Person({member,v,setOthers}  : {member:string[],v:string,setOthers:any}
   };
   const open = Boolean(anchorEl);
   const id = open ? "${anchorEl}Data" : undefined;
-  return (<span><Button variant="outlined" onClick = {handleClick}
+  const user = localStorage.getItem("user");
+  if(v != user) return (<span><Button variant="outlined" onClick = {handleClick}
   >{v}</Button><Popper id={id} open={open} anchorEl={anchorEl} popperOptions = {{strategy : "fixed"}}>
     <Box sx = {{ border: 1, p: 1, bgcolor : "background.paper" , zIndex: 999999}}>
     <PersonProp member = {member} p = {v} setOthers = {setOthers} closefunc = {setAnchorEl}/></Box></Popper></span>);
+  return  (<span><Button variant="outlined" onClick = {handleClick}
+  >{v}</Button><Popper id={id} open={open} anchorEl={anchorEl} popperOptions = {{strategy : "fixed"}}>
+    <Box sx = {{ border: 1, p: 1, bgcolor : "background.paper" , zIndex: 999999}}>
+    <SelfProp member = {member} user = {v}  setOthers = {setOthers} closefunc = {setAnchorEl}/></Box></Popper></span>);  
+}
+
+const strDate =(date : Date) =>{
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return (mm + "/" + dd);
+}
+
+const strTime =(date : Date) =>{
+  const hh = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  return (hh + ":" + min);
 }
 
 function PersonProp({member,p,setOthers,closefunc}:{member:string[],p:string,setOthers:any,closefunc:any}){
   const [open, setOpen] = React.useState(false);
   const sid = useContext(SelectedShift);
+  //@ts-ignore
   const name = ShiftNames[sid];
   const user = localStorage.getItem("user");
+  const useritem = searchUsersShift(p as string);
+  const shiftAmo = useritem.length;
+  const selectedItemInfo = Shiftitems.get({
+  filter: function (item) {
+    return item.id == sid;
+  }
+  });
+  const iteminfo = selectedItemInfo[0];
   return (<div>
     <p>{p}</p>
-    <p>シフト回数:3</p>
+    <p>{"シフト回数:" + shiftAmo}</p>
   <p><Link onClick = {() => {
       const u = p;
       console.log(u);
-      if(!member.includes(u)){
+      if(!member.includes(u) && user != u){
         setOthers([...member,u]);
         closefunc(null);
       }
     }}>ほかのシフトを表示</Link></p>  
-  <p><Link onClick = {() => {
+  <Link onClick = {() => {
     setOpen(true);
 }}>交代</Link>
   <Dialog
@@ -266,14 +363,70 @@ function PersonProp({member,p,setOthers,closefunc}:{member:string[],p:string,set
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
             <p>{"交代シフト:" + name}</p>
+            <p>{"時間:" + strDate(iteminfo.start) + " " + strTime(iteminfo.start) + " ~ " + strTime(iteminfo.end)}</p>
             <p>{p + "=>" + user}</p>
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => {setOpen(false);}} autoFocus> いいえ</Button>
-          <Button onClick={() => {setOpen(false);}}>はい</Button>
+          <Button onClick={() => {
+            setOpen(false);
+            closefunc(null);
+            }} autoFocus> いいえ</Button>
+          <Button onClick={() => {
+            setOpen(false);}
+            }>はい</Button>
         </DialogActions>
-      </Dialog></p></div>);
+      </Dialog></div>);
+}
+
+function SelfProp({member,user,setOthers,closefunc}:{member:string[],user:string,setOthers:any,closefunc:any}){
+  const [open, setOpen] = React.useState(false);
+  const sid = useContext(SelectedShift);
+  //@ts-ignore
+  const name = ShiftNames[sid];
+  const useritem = searchUsersShift(user as string);
+  const shiftAmo = useritem.length;
+  const selectedItemInfo = Shiftitems.get({
+  filter: function (item) {
+    return item.id == sid;
+  }
+  });
+  const iteminfo = selectedItemInfo[0];
+  return (<div>
+    <p>{user + "(あなた)"}</p>
+    <p>{"シフト回数:" + shiftAmo} </p>  
+  <Link onClick = {() => {
+    setOpen(true);
+}}>このシフトの交代を募集</Link>
+  <Dialog
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          closefunc(null);
+          }}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        role="alertdialog"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"交代用Lineで、シフトの交代を要請しますか?"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            <p>{"交代シフト:" + name}</p>
+            <p>{"時間:" + strDate(iteminfo.start) + " " + strTime(iteminfo.start) + " ~ " + strTime(iteminfo.end)}</p>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setOpen(false);
+            closefunc(null);
+            }} autoFocus> いいえ</Button>
+          <Button onClick={() => {
+            setOpen(false);}
+            }>はい</Button>
+        </DialogActions>
+      </Dialog></div>);
 }
 
 function Timeliner({options,items,groups,elmfunc,shiftfunc} : {options:object,items:TimelineProps ,groups:object[],elmfunc:any,shiftfunc:any} ){
@@ -290,14 +443,10 @@ function Timeliner({options,items,groups,elmfunc,shiftfunc} : {options:object,it
         const targetElement = targetEvent.target.closest(".vis-item");
         if(targetElement){
         id = event.items[0];
-        //@ts-ignore
         elmfunc(targetElement);
-        //@ts-ignore
         shiftfunc(id);
         } else {
-          //@ts-ignore
           elmfunc(null);
-          //@ts-ignore
           shiftfunc("パラオナボーイ 作詞:拓也");
         }
     }});
@@ -305,6 +454,5 @@ function Timeliner({options,items,groups,elmfunc,shiftfunc} : {options:object,it
       timeline.destroy();
     };
   }, [options, items, groups]);
-  //@ts-ignore
-  return <div style={{ position: 'relative' }}><div ref={container} /></div>;
+  return <div style={{ position: 'relative' }}><Button>表示切替</Button><div ref={container} /></div>;
 }
