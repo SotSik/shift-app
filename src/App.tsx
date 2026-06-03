@@ -121,7 +121,14 @@ Shiftitems.add([
     {id: 'range-type-class3', start: new Date(2018, 2, 20, 11, 0, 0), end: new Date(2018, 2, 20, 16, 0 , 0), content: "シフト3", type: 'range', group: 2,}
 ]);
 
-let ShiftInfo = {
+let ShiftPtems = new vis.DataSet<ShiftItem>();
+ShiftPtems.add([
+    {id: 'range-type-class', start: new Date(2018, 2, 20, 10, 10, 0), end: new Date(2018, 2, 20, 11, 9, 0), content: 'シフト1', type: 'box', group: 1,},
+    {id: 'range-type-class2', start: new Date(2018, 2, 20, 11, 45, 0), end: new Date(2018, 2, 20, 14, 19, 0), content: "シフト2", type: 'box', group: 1,},
+    {id: 'range-type-class3', start: new Date(2018, 2, 20, 11, 0, 0), end: new Date(2018, 2, 20, 16, 0 , 0), content: "シフト3", type: 'box', group: 2,}
+]);
+
+let ShiftData = {
   "range-type-class" : {name : "シフト1",member : ["ナナフシ","薄型テレビ","シャンシャン","タンバ","西田ゲリオン","タンバリン","帰れ","帰ります"]},
   "range-type-class2" : {name : "シフト2",member : ["ナナフシ"]},
   "range-type-class3" : {name : "シフト3",member : ["つまようじ"]}  
@@ -430,6 +437,8 @@ function SelfProp({member,user,setOthers,closefunc}:{member:string[],user:string
 }
 
 function Timeliner({options,items,groups,elmfunc,shiftfunc} : {options:object,items:TimelineProps ,groups:object[],elmfunc:any,shiftfunc:any} ){
+  const [isWide,setWide] = useState(true);
+  const sizeLetter = (isWide ? "L" : "S");
   const container = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!container.current) return;
@@ -454,5 +463,5 @@ function Timeliner({options,items,groups,elmfunc,shiftfunc} : {options:object,it
       timeline.destroy();
     };
   }, [options, items, groups]);
-  return <div style={{ position: 'relative' }}><Button>表示切替</Button><div ref={container} /></div>;
+  return <div style={{ position: 'relative' }}><Button onClick = {() => setWide(!isWide)}>表示切替</Button><div ref={container} /></div>;
 }
