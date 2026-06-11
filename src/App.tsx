@@ -19,6 +19,9 @@ import './App.css';
 
 const SelectedShift = React.createContext<string>("");
 const SelectedElem = React.createContext<null | HTMLElement>(null);
+const AllShift = React.createContext([]);
+const AllMember = React.createContext([]);
+const AllGroup = React.createContext([]);
 const personalGroup = [{ id: 1, content: "個人シフト" }];
 
 const PersonaltimelineOptions_S = {
@@ -172,16 +175,49 @@ export default function App(){
   const [selectedShift, setSelectedShift] = useState("");
   const [user, setUser] = useState(defaultUser as string);
   const [otherMember, setOtherMember] = useState([] as string[]);
-  return (<div><SelectedShift.Provider value = {selectedShift}><SelectedElem.Provider value = {selectedElement}><Barr/>
+  const [gotallShift,setAllShifts] = useState([] as object[]);
+  const [gotMember,setAllMember] = useState([] as object[]);
+  const [gotGroup,setAllGroup] = useState([] as object[]);
+  useEffect(() => {
+  fetch('http://localhost:5000/api/shifts/all')
+    .then(res => res.json())
+    .then(data => {
+    const dataSet = new vis.DataSet<ShiftItem>();
+      data.rows.forEach((item: object) => {
+        dataSet.add({
+          id: item.id,
+          content: item.content,
+          start: new Date(item.start), 
+          end: new Date(item.end),
+          type:"range", 
+          group: item.group_id
+        });
+      });
+    setAllShifts(dataSet); // Stateへ格納
+    const memberData = {};
+    data.members.forEach((member : object) => {
+      const memarray = memberData[member.id] ? memberData[member.id] : [];
+      memarray.push(member.name);
+      memberData[member.id] = memarray;
+    })
+    setAllMember(memberData);
+    setAllGroup(data.group);
+    console.log(memberData);
+    console.log(data.group);
+    });
+  }, []);
+  console.log(gotallShift);
+  const updatedData = [];
+  return (<div><AllMember value = {gotMember}><AllGroup value = {gotGroup}><AllShift value = {gotallShift}><SelectedShift.Provider value = {selectedShift}><SelectedElem.Provider value = {selectedElement}><Barr/>
     <h2>個人シフト</h2>  <PersonalSpace user = {user} userChange = {setUser} elmfunc={setElement}
       shiftfunc={setSelectedShift}/>
       <Other member={otherMember} elmfunc={setElement} shiftfunc={setSelectedShift} />
     <h2>全体シフト</h2>
     <Timeliner
-      options={timelineOptions_S} items={Shiftitems} groups={groups} 
+      options={timelineOptions_S} items={gotallShift} groups={gotGroup} 
       elmfunc={setElement}
       shiftfunc={setSelectedShift}
-    /><ShiftPop member = {otherMember} setOthers = {setOtherMember}/></SelectedElem.Provider></SelectedShift.Provider></div>
+    /><ShiftPop member = {otherMember} setOthers = {setOtherMember}/></SelectedElem.Provider></SelectedShift.Provider></AllShift></AllGroup></AllMember></div>
   );
 }
 
@@ -193,7 +229,9 @@ function Other({member,elmfunc,shiftfunc} : {member:string[],elmfunc:any,shiftfu
 }
 
 function Otherrow({s,elmfunc,shiftfunc} : {s:string,elmfunc:any,shiftfunc:any}){
-    const [useritem] = useState(() => searchUsersShift(s));
+    const shiftMemberobj = useContext(AllMember);
+    const shifts = useContext(AllShift);
+    const [useritem] = useState(() => searchUsersShift(s,shifts,shiftMemberobj));
     const pgroup = React.useMemo(() => [{ id: 1, content: s }], [s]);
     return(<div>
       <Timeliner
@@ -207,16 +245,18 @@ function Otherrow({s,elmfunc,shiftfunc} : {s:string,elmfunc:any,shiftfunc:any}){
 
 function PersonalSpace({user,userChange,elmfunc,shiftfunc} : {user:string,userChange:any,elmfunc:any,shiftfunc:any}){
     let defaultUser = localStorage.getItem("user");
+    const shiftMemberobj = useContext(AllMember);
+    const shifts = useContext(AllShift);
     useEffect(() => {
       if(!defaultUser){
         const u = prompt("あなたの総務ネームを入力..");
         defaultUser = u;
-        setUserItem(searchUsersShift(u as string));
+        setUserItem(searchUsersShift(u as string,shifts,shiftMemberobj));
         localStorage.setItem("user", u as string);   
         userChange(defaultUser);
       }
-    }, []);
-    const defaultItem = searchUsersShift(defaultUser as string);
+    }, [shifts]);
+    const defaultItem = searchUsersShift(defaultUser as string,shifts,shiftMemberobj);
     const [useritem, setUserItem] = useState(defaultItem);
     const found = Boolean(useritem.length);
     console.log(useritem);
@@ -227,7 +267,7 @@ function PersonalSpace({user,userChange,elmfunc,shiftfunc} : {user:string,userCh
       onChange={(e) => {
         const u = e.target.value;
         userChange(u);
-        setUserItem(searchUsersShift(u));
+        setUserItem(searchUsersShift(u,shifts,shiftMemberobj));
         console.log(u);
         localStorage.setItem("user", u);        
       }} />
@@ -240,18 +280,19 @@ function PersonalSpace({user,userChange,elmfunc,shiftfunc} : {user:string,userCh
     /></div>);
 }
 
-function searchUsersShift(user : string){
+function searchUsersShift(user : string,shifts : object[],shiftMembers : object[]){
   let ans = new vis.DataSet<ShiftItem>();
   console.log(user);
-  Shiftitems.forEach((s) => {
+  shifts.forEach((s) => {
         if(s.id){
           console.log(s);
           //@ts-ignore
-        if(ShiftMembers[s.id].includes(user)) {
+        if(shiftMembers[s.id].includes(user)) {
           let r = s;
           r.group = 1;
           ans.add(r);
   } }});
+  console.log(ans);
   return ans;
 }
 
@@ -262,23 +303,29 @@ function ShiftPop({member,setOthers} : {member : string [],setOthers : any}){
   console.log(sid);
   const open = Boolean(anchorEl);
   //@ts-ignore
-  const name = ShiftNames[sid];
   const id = open ? 'popper' : undefined;
   //@ts-ignore
-  const shiftPeople = ShiftMembers[sid];
-  let selectedItemInfo = Shiftitems.get({
+  const shifts = useContext(AllShift);
+  const shiftMemberobj = useContext(AllMember);
+  console.log(shifts)
+  console.log(shiftMemberobj);
+  console.log(sid);
+  const shiftPeople = shiftMemberobj[sid];
+  try{
+  let selectedItemInfo = shifts.get({
   filter: function (item) {
     return item.id == sid;
   }
   });
   if(!selectedItemInfo[0]){
-      selectedItemInfo = Shiftitems.get({
+      selectedItemInfo = shifts.get({
     filter: function (item) {
       return item.id == "range-type-class";
       }
     });
   }
   const info = selectedItemInfo[0];
+  const name = info.content;
   return(<div>
 <Popper id={id} open={open} anchorEl={anchorEl} style = {{width:"384px"}}>
   <Box sx={{ border: 1, p: 1 ,bgcolor: 'background.paper',zIndex: 9999}}>
@@ -288,6 +335,9 @@ function ShiftPop({member,setOthers} : {member : string [],setOthers : any}){
     <PersonList member = {member} shiftPeople = {shiftPeople} setOthers = {setOthers}/>
   </Box>
 </Popper></div>);
+  } catch(e) {
+    console.log(e);
+  }
 }
 
 function PersonList({member,shiftPeople,setOthers} : {member:string[],shiftPeople:string[],setOthers:any}){
@@ -329,17 +379,19 @@ const strTime =(date : Date) =>{
 function PersonProp({member,p,setOthers,closefunc}:{member:string[],p:string,setOthers:any,closefunc:any}){
   const [open, setOpen] = React.useState(false);
   const sid = useContext(SelectedShift);
+  const shiftMemberobj = useContext(AllMember);
+  const shifts = useContext(AllShift);
   //@ts-ignore
-  const name = ShiftNames[sid];
   const user = localStorage.getItem("user");
-  const useritem = searchUsersShift(p as string);
+  const useritem = searchUsersShift(p as string,shifts,shiftMemberobj);
   const shiftAmo = useritem.length;
-  const selectedItemInfo = Shiftitems.get({
+  const selectedItemInfo = shifts.get({
   filter: function (item) {
     return item.id == sid;
   }
   });
   const iteminfo = selectedItemInfo[0];
+  const name = iteminfo.content;
   return (<div>
     <p>{p}</p>
     <p>{"シフト回数:" + shiftAmo}</p>
@@ -389,16 +441,17 @@ function PersonProp({member,p,setOthers,closefunc}:{member:string[],p:string,set
 function SelfProp({member,user,setOthers,closefunc}:{member:string[],user:string,setOthers:any,closefunc:any}){
   const [open, setOpen] = React.useState(false);
   const sid = useContext(SelectedShift);
-  //@ts-ignore
-  const name = ShiftNames[sid];
-  const useritem = searchUsersShift(user as string);
+  const shiftMemberobj = useContext(AllMember);
+  const shifts = useContext(AllShift);
+  const useritem = searchUsersShift(user as string,shifts,shiftMemberobj);
   const shiftAmo = useritem.length;
-  const selectedItemInfo = Shiftitems.get({
+  const selectedItemInfo = shifts.get({
   filter: function (item) {
     return item.id == sid;
   }
   });
   const iteminfo = selectedItemInfo[0];
+  const name = iteminfo.content;
   return (<div>
     <p>{user + "(あなた)"}</p>
     <p>{"シフト回数:" + shiftAmo} </p>  

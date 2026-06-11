@@ -1,17 +1,20 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { CookiesProvider } from "react-cookie";
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-import './index.css'
-import App from './App.tsx'
-const lightTheme = createTheme({
-  palette: {
-    mode: 'light',
-  },
-});
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import App from './App';
+import AdminPage from './Admin';
+import './index.css';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    {/* アプリ全体をルーターで包む */}
+    <BrowserRouter>
+      <Routes>
+        {/* URLが 「http://localhost:3000/」 のときは通常のシフト画面を表示 */}
+        <Route path="/" element={<App />} />
+        {/* URLが 「http://localhost:3000/admin」 のときは管理画面を表示 */}
+        <Route path="/admin" element={<AdminPage />} />
+      </Routes>
+    </BrowserRouter>
+  </React.StrictMode>
+);
