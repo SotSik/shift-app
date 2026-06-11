@@ -55,11 +55,12 @@ export default function Admin(){
   return (<div><Barr />
   <Button onClick = {() => {registerDB()}}>データベース</Button>
   <Button 
-  variant="contained"
-  onClick = {() => {registerDB()}}>Excelインポート
+  component="label"
+  variant="contained"> Excelインポート
   <VisuallyHiddenInput
     type="file"
-    onChange={(event) => console.log(event.target.files)}
+    accept = ".xlsx"
+    onChange={(file) => importXLSX(file.target.files[0],(data) => console.log(data))}
     multiple
   /></Button>
   </div>
@@ -141,6 +142,14 @@ async function registerDB() {
   }
 }
 
-function importExcel(fileBinary : FileReader){
-  const workbook = XLSX.read(fileBinary, { type: 'binary' });
+
+function importXLSX(file: File, callback?: (data: any[]) => void){
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const wb = XLSX.read(e.target?.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      callback?.(rows);
+    };
+    reader.readAsArrayBuffer(file);
 }
