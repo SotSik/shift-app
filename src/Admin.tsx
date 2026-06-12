@@ -60,7 +60,9 @@ export default function Admin(){
   <VisuallyHiddenInput
     type="file"
     accept = ".xlsx"
-    onChange={(file) => importXLSX(file.target.files[0],(data) => console.log(data))}
+    onChange={(file) => importXLSX(file.target.files[0],(data) => {
+      importData(data);
+    })}
     multiple
   /></Button>
   </div>
