@@ -18,6 +18,14 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
 import './App.css';
+import e from 'cors';
+
+interface ShiftContent{
+  id: string
+  start: string,
+  end: string,
+  member:string[]
+}
 
 const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
@@ -60,6 +68,7 @@ export default function Admin(){
   <VisuallyHiddenInput
     type="file"
     accept = ".xlsx"
+    //@ts-ignore
     onChange={(file) => importXLSX(file.target.files[0],(data) => {
       importData(data);
     })}
@@ -150,8 +159,55 @@ function importXLSX(file: File, callback?: (data: any[]) => void){
     reader.onload = (e) => {
       const wb = XLSX.read(e.target?.result, { type: 'array' });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 ,raw: false});
       callback?.(rows);
     };
     reader.readAsArrayBuffer(file);
+}
+
+function importData(data : string[][]){
+  console.log(data);
+  let rawShiftData : string[][][] = [];
+  let current: string[][] = [];
+  data.forEach((v: string[]) => {
+    if(v.length){
+      current.push(v);
+      console.log(v)
+    } else {
+      if(current.length) rawShiftData.push(current);
+      current = [];
+    }
+  });
+  if(current.length){
+    rawShiftData.push(current);
+  }
+  console.log(rawShiftData);
+  let shiftInfo : object[] = [];
+  let sizes : object = {};
+  rawShiftData.forEach((rawShift) => {
+    const shift = { id : rawShift[0][3], shiftName : rawShift[2][1],AutherShiftName: rawShift[0][0] , auther:rawShift[0][1] ,place: rawShift[2][0] ,content: [] as ShiftContent[]};
+    const day : string = rawShift[0][2];
+    rawShift.shift();
+    rawShift.shift();
+    sizes[shift.id] = sizes[shift.id] ? sizes[shift.id] : 0;
+    const size = sizes[shift.id];
+    console.log(sizes[shift.id]);
+    rawShift.forEach((s,n) => {
+      let ended = false;
+      const members = s.map((m,i) => {
+        if(3 < i && !ended) {
+          if(m) return m;
+          else ended = true;
+        }
+      });
+      for(let i = 0;i < 4;i++){
+        members.shift();
+      }
+      shift.content.push({id : shift.id + (n + size),start: day + " " + s[2] + ":59",end: day + " " + s[3] + ":00",member : members as string[]});
+      sizes[shift.id] = sizes[shift.id] + 1;
+    })
+    shiftInfo.push(shift);
+  });
+  console.log(shiftInfo);
+
 }
