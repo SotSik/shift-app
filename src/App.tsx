@@ -102,9 +102,6 @@ const timelineOptions_L = {
   }                                                                                                                                                                                                                                                                                                                                                                                                                                       
 }
 
-const groups = [{ id: 1, content: 'type1', },{ id: 2, content: 'type2', }]
-const memberList = ["ナナフシ","つまようじ","薄型テレビ"];
-
 interface ShiftItem {
   id: number | string;
   start: Date;
@@ -115,38 +112,6 @@ interface ShiftItem {
 }
 
 interface TimelineProps extends vis.DataSet<ShiftItem>{
-}
-
-let Shiftitems = new vis.DataSet<ShiftItem>();
-Shiftitems.add([
-    {id: 'range-type-class', start: new Date(2018, 2, 20, 10, 10, 0), end: new Date(2018, 2, 20, 11, 9, 0), content: 'シフト1', type: 'range', group: 1,},
-    {id: 'range-type-class2', start: new Date(2018, 2, 20, 11, 45, 0), end: new Date(2018, 2, 20, 14, 19, 0), content: "シフト2", type: 'range', group: 1,},
-    {id: 'range-type-class3', start: new Date(2018, 2, 20, 11, 0, 0), end: new Date(2018, 2, 20, 16, 0 , 0), content: "シフト3", type: 'range', group: 2,}
-]);
-
-let ShiftPtems = new vis.DataSet<ShiftItem>();
-ShiftPtems.add([
-    {id: 'range-type-class', start: new Date(2018, 2, 20, 10, 10, 0), end: new Date(2018, 2, 20, 11, 9, 0), content: 'シフト1', type: 'box', group: 1,},
-    {id: 'range-type-class2', start: new Date(2018, 2, 20, 11, 45, 0), end: new Date(2018, 2, 20, 14, 19, 0), content: "シフト2", type: 'box', group: 1,},
-    {id: 'range-type-class3', start: new Date(2018, 2, 20, 11, 0, 0), end: new Date(2018, 2, 20, 16, 0 , 0), content: "シフト3", type: 'box', group: 2,}
-]);
-
-let ShiftData = {
-  "range-type-class" : {name : "シフト1",member : ["ナナフシ","薄型テレビ","シャンシャン","タンバ","西田ゲリオン","タンバリン","帰れ","帰ります"]},
-  "range-type-class2" : {name : "シフト2",member : ["ナナフシ"]},
-  "range-type-class3" : {name : "シフト3",member : ["つまようじ"]}  
-}
-
-let ShiftMembers = {
-  "range-type-class" : ["ナナフシ","薄型テレビ","シャンシャン","タンバ","西田ゲリオン","タンバリン","帰れ","帰ります"],
-  "range-type-class2" : ["ナナフシ"],
-  "range-type-class3" : ["つまようじ"]
-}
-
-let ShiftNames = {
-  "range-type-class":"シフト1",
-  "range-type-class2" : "シフト2",
-  "range-type-class3" : "シフト3" 
 }
 
 function Barr(){

@@ -19,12 +19,31 @@ import DialogContentText from '@mui/material/DialogContentText';
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
 import './App.css';
 import e from 'cors';
+import Select from '@mui/material/Select';
+
+import MenuItem from '@mui/material/MenuItem';
+
+const SelectedShift = React.createContext<string>("");
+const SelectedElem = React.createContext<null | HTMLElement>(null);
+const AllShift = React.createContext([]);
+const AllMember = React.createContext([]);
+const AllGroup = React.createContext([]);
+const personalGroup = [{ id: 1, content: "個人シフト" }];
 
 interface ShiftContent{
   id: string
   start: string,
   end: string,
   member:string[]
+}
+
+interface ShiftItem {
+  id: number | string;
+  start: Date;
+  end: Date;
+  content: string;
+  type: string;
+  group: number;
 }
 
 const VisuallyHiddenInput = styled('input')({
@@ -59,9 +78,67 @@ function Barr(){
   );
 }
 
+function doubleCheck(s,shift){
+  const st = s.start;
+  const ed = s.end;
+  let ans = true;
+  shift.forEach(v => {
+    if(st <= v.end || ed >= v.start ) ans = false;
+  })
+  return ans;
+}
+
 export default function Admin(){
-  return (<div><Barr />
-  <Button onClick = {() => {registerDB()}}>データベース</Button>
+  const [selectedElement, setElement] = useState(null);
+  const [selectedShift, setSelectedShift] = useState("");
+  const [otherMember, setOtherMember] = useState([] as string[]);
+  const [gotallShift,setAllShifts] = useState(null);
+  const [gotMember,setAllMember] = useState([] as object[]);
+  const [gotGroup,setAllGroup] = useState([] as object[]);
+  const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+  fetch('http://localhost:5000/api/shifts/all')
+    .then(res => res.json())
+    .then(data => {
+    const dataSet = new vis.DataSet<ShiftItem>();
+      data.rows.forEach((item: object) => {
+        dataSet.add({
+          id: item.id,
+          content: item.content,
+          start: new Date(item.start), 
+          end: new Date(item.end),
+          type:"range", 
+          group: item.group_id
+        });
+      });
+    const memberData = {};
+    data.members.forEach((member : object) => {
+      const memarray = memberData[member.id] ? memberData[member.id] : [];
+      memarray.push(member.name);
+      memberData[member.id] = memarray;
+    })
+    dataSet.get().forEach(v => {
+      doubleCheck(s,shift);
+    })
+    console.log(dataSet);
+    setAllShifts(dataSet); 
+    setAllMember(memberData);
+    setAllGroup(data.group);
+    console.log(memberData);
+    console.log(data.group);
+    setIsLoading(false);
+    });
+  }, []);
+if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <p>データを読み込み中...</p>
+      </Box>
+    );
+  }
+  console.log(gotallShift);
+  console.log(gotMember)
+  return (<div><AllMember value = {gotMember}><AllShift value = {gotallShift}><Barr />
   <Button 
   component="label"
   variant="contained"> Excelインポート
@@ -70,54 +147,19 @@ export default function Admin(){
     accept = ".xlsx"
     //@ts-ignore
     onChange={(file) => importXLSX(file.target.files[0],(data) => {
-      importData(data);
+      const sendData = importData(data);
+      console.log(sendData);
+      registerDB(sendData);
     })}
     multiple
   /></Button>
+  <DisplayShifts shifts = {gotallShift}  members = {gotMember}/></AllShift></AllMember>
   </div>
   );
 }
 
-async function registerDB() {
+async function registerDB([groupData,updatedData,memberData]) {
   console.warn("南佳也には全く似ていません!");
-  const updatedData = [{
-    id: "simokita1", // 変更したいアイテムのID
-    start: "2026-08-10 13:00:00",
-    end: "2026-08-10 17:00:00",
-    content: "下北沢シフト",
-    group_id: 1
-  }
-  ,{
-    id: "simokita2", // 変更したいアイテムのID
-    start: "2026-08-10 17:00:00",
-    end: "2026-08-10 19:00:00",
-    content: "下北沢シフト",
-    group_id: 1
-  }
-  ,{
-    id: "oudou1", // 変更したいアイテムのID
-    start: "2026-08-10 8:10:00",
-    end: "2026-08-10 10:10:00",
-    content: "王道銀行シフト",
-    group_id: 2
-  },
-  {
-    id: "homo1", // 変更したいアイテムのID
-    start: "2026-08-10 8:10:00",
-    end: "2026-08-10 10:10:00",
-    content: "ホモビシフト",
-    group_id: 3
-  }];
-  const groupData = [
-  {id:1, content:"下北沢"},
-  {id:2, content:"王道銀行"},
-  {id:3, content:"COAT"}]
-  const memberData = [
-  {id:"simokita2", name:"YJ"},
-  {id:"oudou1", name:"114514"},
-  {id:"simokita1", name: "YJ" },
-  {id:"simokita1", name : "Homo"},
-  {id:"homo1",name:"homo"}];
   console.log(updatedData);
   console.log(groupData);
   console.log(memberData);
@@ -185,7 +227,7 @@ function importData(data : string[][]){
   let shiftInfo : object[] = [];
   let sizes : object = {};
   rawShiftData.forEach((rawShift) => {
-    const shift = { id : rawShift[0][3], shiftName : rawShift[2][1],AutherShiftName: rawShift[0][0] , auther:rawShift[0][1] ,place: rawShift[2][0] ,content: [] as ShiftContent[]};
+    const shift = { id : rawShift[0][3], shiftName : rawShift[2][1],autherShiftName: rawShift[0][0] , auther:rawShift[0][1] ,place: rawShift[2][0] ,content: [] as ShiftContent[]};
     const day : string = rawShift[0][2];
     rawShift.shift();
     rawShift.shift();
@@ -209,5 +251,115 @@ function importData(data : string[][]){
     shiftInfo.push(shift);
   });
   console.log(shiftInfo);
+  const sendGroup = [];
+  const sendItem = [];
+  const sendMembers = [];
+  shiftInfo.forEach((shift) => {
+    sendGroup.push({id : shift.id , content : shift.place, autherShiftName : shift.autherShiftName});
+    shift.content.forEach((v) => {
+      sendItem.push({id : v.id, start : v.start, end : v.end, content : shift.shiftName, group_id : shift.id});
+      v.member.forEach((m) => {
+        sendMembers.push({id : v.id,name : m});
+      })
+    })
+  });
+  console.log(sendGroup)
+  console.log(sendItem)
+  console.log(sendMembers)
+  return([sendGroup,sendItem,sendMembers]);
+}
 
+function DisplayShifts({shifts,members} : {shifts : object[],members : string[]}){
+  console.log(shifts.get())
+  console.log(members);
+  return shifts.get().map(s => {
+    const member = members[s.id];
+    console.log(s.id);
+    console.log(member);
+    return(<Box sx={{ border: 3, p: 1 ,bgcolor: 'background.paper',zIndex: 9999}}>
+       <p>{s.content}</p> 
+     <p>{strDate(s.start) + " " + strTime(s.start) + " ~ " + strTime(s.end)}</p>
+     <p><a href = {`../src/pdfs/${s.content}.pdf`} target="_blank">シフト詳細を表示</a></p>
+     <PersonList key={s.id} shiftPeople={member} s = {s} /></Box>);
+  })
+}
+
+function PersonList({shiftPeople,s} : {shiftPeople:string[],s : object}){
+  return( shiftPeople.map( (v:string) => 
+      <Person  v = {v} s = {s}/>
+));
+}
+
+function Person({v,s}  : {v:string,s:object}){
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(anchorEl ? null : event.currentTarget);
+  };
+  const stat = (v[0] == "!" ? "error" :"primary" );
+  const open = Boolean(anchorEl);
+  const id = open ? "${anchorEl}Data" : undefined;
+  return (<span><Button variant="outlined" onClick = {handleClick} color = {stat}
+  >{v}</Button><Popper id={id} open={open} anchorEl={anchorEl} popperOptions = {{strategy : "fixed"}}>
+    <Box sx = {{ border: 1, p: 1, bgcolor : "background.paper" , zIndex: 999999}}>
+    <PersonProp p = {v} s = {s} closefunc = {setAnchorEl}/></Box></Popper></span>);
+}
+
+const strDate =(date : Date) =>{
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return (mm + "/" + dd);
+}
+
+const strTime =(date : Date) =>{
+  const hh = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  return (hh + ":" + min);
+}
+
+function PersonProp({p,s,closefunc}:{p:string,s:object,closefunc:any}){
+  const [open, setOpen] = React.useState(false);
+    const useritem = searchUsersShift(p as string);
+  const shiftAmo = useritem.length;
+  const iteminfo = s;
+  const name = iteminfo.content;
+  return (<div>
+    <p>{p}</p>
+    <p>{"シフト回数:" + shiftAmo}</p>
+  <Link onClick = {() => {
+    setOpen(true);
+}}>交代</Link>
+<Dialog open = {open}><Box>
+  <p> 入れ替えます プルダウン:推奨</p>
+    <Select
+    labelId="demo-simple-select-label"
+    id="demo-simple-select"
+    label="Age"
+    onChange={() => console.log("HOMO")}>
+    <MenuItem value={1}>Ten</MenuItem>
+    <MenuItem value={2}>Twenty</MenuItem>
+    <MenuItem value={3}>Thirty</MenuItem>
+  </Select>
+    <DialogActions><Button onClick={() => {
+    setOpen(false);}}>とじる</Button>
+    </DialogActions>
+  </Box></Dialog>
+</div>);
+}
+
+function searchUsersShift(user : string){
+  let ans = new vis.DataSet<ShiftItem>();
+  console.log(user);
+  const shifts = useContext(AllShift);
+  const shiftMembers = useContext(AllMember);
+  shifts.forEach((s) => {
+        if(s.id){
+          console.log(s);
+          //@ts-ignore
+        if(shiftMembers[s.id].includes(user)) {
+          let r = s;
+          r.group = 1;
+          ans.add(r);
+  } }});
+  console.log(ans);
+  return ans;
 }

@@ -41,8 +41,10 @@ async function initDatabase() {
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS groupInfo (
-      id INTEGER PRIMARY KEY,
+      id TEXT PRIMARY KEY,
       content TEXT
+      auther TEXT
+      autherShiftName TEXT
     );
   `);
   console.log("Database initialized successfully.");
