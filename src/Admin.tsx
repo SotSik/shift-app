@@ -27,6 +27,8 @@ const SelectedShift = React.createContext<string>("");
 const SelectedElem = React.createContext<null | HTMLElement>(null);
 const AllShift = React.createContext([]);
 const AllMember = React.createContext([]);
+const MemberShiftData = React.createContext([]);
+const AllWarn = React.createContext([]);
 const AllGroup = React.createContext([]);
 const personalGroup = [{ id: 1, content: "個人シフト" }];
 
@@ -78,13 +80,20 @@ function Barr(){
   );
 }
 
-function doubleCheck(s,shift){
-  const st = s.start;
-  const ed = s.end;
-  let ans = true;
-  shift.forEach(v => {
-    if(st <= v.end || ed >= v.start ) ans = false;
-  })
+function duplexCheck(s,Membershift,shift){
+  let ans = [];
+  const st = shift.get(s).start;
+  const ed = shift.get(s).end;
+  const id = s;
+  Membershift.forEach((v) => {
+    if(v != id){
+      const vid = v;
+      if((shift.get(vid).end > st && st > shift.get(vid).start) || (shift.get(vid).end > ed && ed > shift.get(vid).start)){
+        ans.push(vid);
+      }
+    }
+  });
+  if(ans.length) ans.push(s);
   return ans;
 }
 
@@ -96,6 +105,10 @@ export default function Admin(){
   const [gotMember,setAllMember] = useState([] as object[]);
   const [gotGroup,setAllGroup] = useState([] as object[]);
   const [isLoading, setIsLoading] = useState(true);
+  const [memberShifts , setMemberShifts] = useState({});
+  const [allerwarn , setAllWarn] = useState({});
+  const warn = {};
+  const allTheShift = useContext(AllShift);
   useEffect(() => {
   fetch('http://localhost:5000/api/shifts/all')
     .then(res => res.json())
@@ -112,19 +125,34 @@ export default function Admin(){
         });
       });
     const memberData = {};
+    const personShiftData = {};
+    let unique = new Set();
     data.members.forEach((member : object) => {
+      unique.add(member.name);
       const memarray = memberData[member.id] ? memberData[member.id] : [];
       memarray.push(member.name);
       memberData[member.id] = memarray;
+      const ps = personShiftData[member.name] ? personShiftData[member.name] : [];
+      ps.push(member.id);
+      personShiftData[member.name] = ps;
     })
-    dataSet.get().forEach(v => {
-      doubleCheck(s,shift);
-    })
+    console.log(unique)
+    unique.forEach((m) => {
+      warn[m] = [];
+      personShiftData[m].forEach((s) => {
+        const dup =  duplexCheck(s,personShiftData[m],dataSet);
+        if(dup.length)console.log(dup)
+        dup.forEach((d) => warn[m].push(d));
+      });
+    });
+    console.log(warn);
+    setAllWarn(warn);
     console.log(dataSet);
+    setMemberShifts(personShiftData);
     setAllShifts(dataSet); 
     setAllMember(memberData);
     setAllGroup(data.group);
-    console.log(memberData);
+    console.log(personShiftData);
     console.log(data.group);
     setIsLoading(false);
     });
@@ -138,7 +166,7 @@ if (isLoading) {
   }
   console.log(gotallShift);
   console.log(gotMember)
-  return (<div><AllMember value = {gotMember}><AllShift value = {gotallShift}><Barr />
+  return (<div><AllWarn value = {allerwarn}><MemberShiftData value = {memberShifts}><AllMember value = {gotMember}><AllShift value = {gotallShift}><Barr />
   <Button 
   component="label"
   variant="contained"> Excelインポート
@@ -153,7 +181,7 @@ if (isLoading) {
     })}
     multiple
   /></Button>
-  <DisplayShifts shifts = {gotallShift}  members = {gotMember}/></AllShift></AllMember>
+  <DisplayShifts shifts = {gotallShift}  members = {gotMember}/></AllShift></AllMember></MemberShiftData></AllWarn>
   </div>
   );
 }
@@ -214,7 +242,6 @@ function importData(data : string[][]){
   data.forEach((v: string[]) => {
     if(v.length){
       current.push(v);
-      console.log(v)
     } else {
       if(current.length) rawShiftData.push(current);
       current = [];
@@ -233,7 +260,6 @@ function importData(data : string[][]){
     rawShift.shift();
     sizes[shift.id] = sizes[shift.id] ? sizes[shift.id] : 0;
     const size = sizes[shift.id];
-    console.log(sizes[shift.id]);
     rawShift.forEach((s,n) => {
       let ended = false;
       const members = s.map((m,i) => {
@@ -250,7 +276,6 @@ function importData(data : string[][]){
     })
     shiftInfo.push(shift);
   });
-  console.log(shiftInfo);
   const sendGroup = [];
   const sendItem = [];
   const sendMembers = [];
@@ -270,38 +295,44 @@ function importData(data : string[][]){
 }
 
 function DisplayShifts({shifts,members} : {shifts : object[],members : string[]}){
-  console.log(shifts.get())
-  console.log(members);
+  const [selecting,setChange] = useState("");
   return shifts.get().map(s => {
     const member = members[s.id];
-    console.log(s.id);
-    console.log(member);
-    return(<Box sx={{ border: 3, p: 1 ,bgcolor: 'background.paper',zIndex: 9999}}>
+    return(<Box sx={{ border: 3, p: 1 ,bgcolor: 'background.paper',zIndex: 9999, position:"flex"}}>
        <p>{s.content}</p> 
      <p>{strDate(s.start) + " " + strTime(s.start) + " ~ " + strTime(s.end)}</p>
      <p><a href = {`../src/pdfs/${s.content}.pdf`} target="_blank">シフト詳細を表示</a></p>
-     <PersonList key={s.id} shiftPeople={member} s = {s} /></Box>);
+     <PersonList key={s.id} shiftPeople={member} s = {s} setChange = {setChange}  selecting = {selecting} /></Box>);
   })
 }
 
-function PersonList({shiftPeople,s} : {shiftPeople:string[],s : object}){
-  return( shiftPeople.map( (v:string) => 
-      <Person  v = {v} s = {s}/>
+function changeShift(obj,selected){
+  
+}
+
+function PersonList({shiftPeople,s,setChange,selecting} : {shiftPeople:string[],s : object,setChange:any,selecting:string}){
+  return( shiftPeople.map( (v:string) => {
+    return <Person  v = {v} s = {s} setChange = {setChange} selecting = {selecting}/>
+    }
 ));
 }
 
-function Person({v,s}  : {v:string,s:object}){
+function Person({v,s,setChange,selecting}  : {v:string,s:object,setChange:object,selecting:string}){
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(anchorEl ? null : event.currentTarget);
   };
-  const stat = (v[0] == "!" ? "error" :"primary" );
+  const warn = useContext(AllWarn);
+  let stat = "primary" ;
+  if(warn[v]) {
+    if(warn[v].includes(s.id)) stat = "error";
+  }
   const open = Boolean(anchorEl);
   const id = open ? "${anchorEl}Data" : undefined;
   return (<span><Button variant="outlined" onClick = {handleClick} color = {stat}
   >{v}</Button><Popper id={id} open={open} anchorEl={anchorEl} popperOptions = {{strategy : "fixed"}}>
     <Box sx = {{ border: 1, p: 1, bgcolor : "background.paper" , zIndex: 999999}}>
-    <PersonProp p = {v} s = {s} closefunc = {setAnchorEl}/></Box></Popper></span>);
+    <PersonProp p = {v} s = {s} setChange = {setChange} selecting = {selecting}/></Box></Popper></span>);
 }
 
 const strDate =(date : Date) =>{
@@ -316,20 +347,21 @@ const strTime =(date : Date) =>{
   return (hh + ":" + min);
 }
 
-function PersonProp({p,s,closefunc}:{p:string,s:object,closefunc:any}){
+function PersonProp({p,s,setChange,selecting}:{p:string,s:object,setChange:any,selecting:string}){
   const [open, setOpen] = React.useState(false);
+  console.log(selecting)
     const useritem = searchUsersShift(p as string);
   const shiftAmo = useritem.length;
   const iteminfo = s;
   const name = iteminfo.content;
-  return (<div>
+  if (!selecting) {return (<div>
     <p>{p}</p>
     <p>{"シフト回数:" + shiftAmo}</p>
   <Link onClick = {() => {
     setOpen(true);
 }}>交代</Link>
 <Dialog open = {open}><Box>
-  <p> 入れ替えます プルダウン:推奨</p>
+  <p> 入れ替えます</p>
     <Select
     labelId="demo-simple-select-label"
     id="demo-simple-select"
@@ -340,10 +372,15 @@ function PersonProp({p,s,closefunc}:{p:string,s:object,closefunc:any}){
     <MenuItem value={3}>Thirty</MenuItem>
   </Select>
     <DialogActions><Button onClick={() => {
-    setOpen(false);}}>とじる</Button>
+    setOpen(false);
+    setChange(s)}}>はい</Button><Button onClick={() => {
+    setOpen(false);}}>いいえ</Button>
     </DialogActions>
   </Box></Dialog>
-</div>);
+</div>);} else {
+  changeShift(selecting,s);
+  setChange("");
+}
 }
 
 function searchUsersShift(user : string){
@@ -353,13 +390,11 @@ function searchUsersShift(user : string){
   const shiftMembers = useContext(AllMember);
   shifts.forEach((s) => {
         if(s.id){
-          console.log(s);
           //@ts-ignore
         if(shiftMembers[s.id].includes(user)) {
           let r = s;
           r.group = 1;
           ans.add(r);
   } }});
-  console.log(ans);
   return ans;
 }
