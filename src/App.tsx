@@ -148,7 +148,8 @@ export default function App(){
     .then(res => res.json())
     .then(data => {
     const dataSet = new vis.DataSet<ShiftItem>();
-      data.rows.forEach((item: object) => {
+      data.rows.forEach((item) => {
+        //@ts-ignre
         dataSet.add({
           id: item.id,
           content: item.content,
@@ -245,7 +246,7 @@ function PersonalSpace({user,userChange,elmfunc,shiftfunc} : {user:string,userCh
     /></div>);
 }
 
-function searchUsersShift(user : string,shifts : object[],shiftMembers : object[]){
+function searchUsersShift(user : string,shifts : any,shiftMembers : object[]){
   let ans = new vis.DataSet<ShiftItem>();
   console.log(user);
   shifts.forEach((s) => {

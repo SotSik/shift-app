@@ -166,8 +166,9 @@ if (isLoading) {
   }
   console.log(gotallShift);
   console.log(gotMember)
+  const found = false;
   return (<div><AllWarn value = {allerwarn}><MemberShiftData value = {memberShifts}><AllMember value = {gotMember}><AllShift value = {gotallShift}><Barr />
-  <Button 
+  <div position = "flex"><Button 
   component="label"
   variant="contained"> Excelインポート
   <VisuallyHiddenInput
@@ -181,7 +182,13 @@ if (isLoading) {
     })}
     multiple
   /></Button>
-  <DisplayShifts shifts = {gotallShift}  members = {gotMember}/></AllShift></AllMember></MemberShiftData></AllWarn>
+  <TextField id="outlined-basic" label="総務ネーム" variant="outlined" 
+      error={!found} helperText = {found ? "　" : "該当なし"} 
+      onChange={(e) => {     
+        console.log(e)
+      }} />
+  </div>
+  <div className = {"container"}><DisplayShifts shifts = {gotallShift}  members = {gotMember}/></div></AllShift></AllMember></MemberShiftData></AllWarn>
   </div>
   );
 }
@@ -298,11 +305,11 @@ function DisplayShifts({shifts,members} : {shifts : object[],members : string[]}
   const [selecting,setChange] = useState("");
   return shifts.get().map(s => {
     const member = members[s.id];
-    return(<Box sx={{ border: 3, p: 1 ,bgcolor: 'background.paper',zIndex: 9999, position:"flex"}}>
+    return(<Box sx={{ border: 3, p: 1 ,bgcolor: 'background.paper' , display:"grid"}}>
        <p>{s.content}</p> 
      <p>{strDate(s.start) + " " + strTime(s.start) + " ~ " + strTime(s.end)}</p>
      <p><a href = {`../src/pdfs/${s.content}.pdf`} target="_blank">シフト詳細を表示</a></p>
-     <PersonList key={s.id} shiftPeople={member} s = {s} setChange = {setChange}  selecting = {selecting} /></Box>);
+     <div display = "flex"><PersonList key={s.id} onSelect={(id) => console.log(id)}  shiftPeople={member} s = {s} setChange = {setChange}  selecting = {selecting} /></div></Box>);
   })
 }
 
@@ -329,7 +336,7 @@ function Person({v,s,setChange,selecting}  : {v:string,s:object,setChange:object
   }
   const open = Boolean(anchorEl);
   const id = open ? "${anchorEl}Data" : undefined;
-  return (<span><Button variant="outlined" onClick = {handleClick} color = {stat}
+  return (<span ><Button variant="outlined" onClick = {handleClick} color = {stat}
   >{v}</Button><Popper id={id} open={open} anchorEl={anchorEl} popperOptions = {{strategy : "fixed"}}>
     <Box sx = {{ border: 1, p: 1, bgcolor : "background.paper" , zIndex: 999999}}>
     <PersonProp p = {v} s = {s} setChange = {setChange} selecting = {selecting}/></Box></Popper></span>);

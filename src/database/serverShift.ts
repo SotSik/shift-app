@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as XLSX from 'xlsx';
 
 const app = express();
 app.use(cors());
@@ -25,7 +28,8 @@ async function initDatabase() {
       start TEXT NOT NULL,
       end TEXT NOT NULL,
       content TEXT NOT NULL,
-      group_id INTEGER NOT NULL
+      group_id INTEGER NOT NULL,
+      explain TEXT
     );
   `);
 
@@ -34,6 +38,7 @@ async function initDatabase() {
     CREATE TABLE IF NOT EXISTS shiftMembers (
       id TEXT,
       name TEXT,
+      cell TEXT,
       PRIMARY KEY (id, name),
       FOREIGN KEY (id) REFERENCES shifts(id)
     );
@@ -42,9 +47,18 @@ async function initDatabase() {
   await db.exec(`
     CREATE TABLE IF NOT EXISTS groupInfo (
       id TEXT PRIMARY KEY,
-      content TEXT
-      auther TEXT
+      content TEXT,
+      auther TEXT,
       autherShiftName TEXT
+    );
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS shiftreq (
+      id TEXT PRIMARY KEY,
+      user TEXT,
+      shift_id TEXT,
+      accept TEXT
     );
   `);
   console.log("Database initialized successfully.");
@@ -110,18 +124,56 @@ app.post('/api/shifts/registerMember', async (req, res) => {
   }
 });
 
-app.post('/api/shifts/update', async (req, res) => {
+app.post('/api/shifts/request', async (req, res) => {
   try {
-    const { id, start, end, content, group_id } = req.body;
+    // 送られてくるJSONの構造に合わせて適切な配列（例: req.body.membersなど）を指定してください
+    const dataArray = Array.isArray(req.body) ? req.body : (req.body.members || []);
+    
+    for (const row of dataArray) {
+      await db.run(
+        "INSERT OR REPLACE INTO shiftMembers (id, user, shift, accept) VALUES (?, ?)",
+        [row.id, row.user, row.shift,""]
+      );
+    }
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("【/api/shifts/register でSQLエラー発生】:", error);
+    res.status(500).json({ error: error });
+  }
+});
+
+app.post('/api/shifts/updateMember', async (req, res) => {
+  try {
+    const { id, member, oldmember, target} = req.body;
     await db.run(
-      "UPDATE shifts SET start = ?, end = ?, content = ?, group_id = ? WHERE id = ?",
-      [ start, end, content, group_id, id]
+      "UPDATE shiftMembers SET name = ? WHERE name = ? AND id = ?",
+      [member,oldmember,id]
     );
+    let excelData = parseExcelFile();
+    const sheetInfo = target;
+    const targetex = excelData[sheetInfo.sheetName];
+    targetex[sheetInfo.row][sheetInfo.col] = sheetInfo.name;
+    excelData[sheetInfoInfo.sheetName] = targetex;
+    XLSX.writeFile(wb, "../src/database/Shift.xlsx");
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error });
   }
 });
+
+function parseExcelFile() {
+  // 1. ファイルを Buffer として同期的に読み込む
+  const fileBuffer = fs.readFileSync("../src/database/Shift.xlsx");
+  const wb = XLSX.read(fileBuffer, { type: 'buffer' });
+  const result = {};
+  // 3. すべてのシートをループ処理
+  wb.SheetNames.forEach((sheetName) => {
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false }) as any[][];
+    result[sheetName] = rows;
+  });
+  return result;
+}
 
 // サーバー起動
 async function startApplication() {
